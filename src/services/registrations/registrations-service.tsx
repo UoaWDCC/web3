@@ -43,4 +43,15 @@ export const RegistrationService = {
 
     return Boolean(data);
   },
+  isWalletEmpty: async (email: string) => {
+    const { data, error } = await supabase.rpc("is_wallet_id_empty", {
+      input_email: email.trim().toLocaleLowerCase(),
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    return Boolean(data);
+  },
 };

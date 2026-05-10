@@ -21,7 +21,10 @@ export function EnsClaim() {
 
   const [email, setEmail] = useState("");
   const [emailStatus, setEmailStatus] = useState<"idle" | "checking" | "valid" | "invalid">("idle");
-  const canConnect = emailStatus === "valid";
+  const [walletEmptyStatus, setWalletEmptyStatus] = useState<"idle" | "checking" | "valid" | "invalid">("idle");
+  const canConnect = emailStatus === "valid" && walletEmptyStatus === "valid";
+  const [walletSaved, setWalletSaved] = useState(false);
+  
 
   useEffect(() => {
     if (address) {
@@ -51,20 +54,20 @@ export function EnsClaim() {
         setEmailStatus("checking");
 
         const exists = await RegistrationService.isEmailTaken(cleanEmail);
-
+        const wallet_empty = await RegistrationService.isWalletEmpty(cleanEmail);
+        console.log(wallet_empty)
         setEmailStatus(exists ? "valid" : "invalid");
+        setWalletEmptyStatus(wallet_empty ? "valid" : "invalid")
+        
       } catch (err) {
         console.error("Email check failed:", err);
         setEmailStatus("invalid");
+        setWalletEmptyStatus("invalid")
       }
     }, 500);
 
     return () => clearTimeout(timeout);
   }, [email]);
-
-
-
-
 
 
   
@@ -154,11 +157,17 @@ export function EnsClaim() {
             </p>
           )}
 
-          {emailStatus === "valid" && (
+          {(emailStatus === "valid" && walletEmptyStatus === "valid") && (
             <p className="mt-2 text-sm text-green-500">
-              Email registered
+              Email registered without wallet connected
             </p>
           )}
+          {(emailStatus === "valid" && walletEmptyStatus === "invalid") && (
+            <p className="mt-2 text-sm text-red-500">
+              Email registered but wallet already connected
+            </p>
+          )}
+
 
           {emailStatus === "invalid" && (
             <p className="mt-2 text-sm text-red-500">
