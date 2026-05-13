@@ -1,22 +1,12 @@
 import { RegistrationData } from "../../lib/schemas/registration";
 import { supabase } from "../supabase";
 
-/**
- * Service for handling registration-related database operations.
- * Provides methods to submit new registrations and check email availability.
- */
 export const RegistrationService = {
-  /**
-   * Submits a new registration to the database.
-   *
-   * @param {RegistrationData} registrationData - The registration data object.
-   * @returns {Promise<any>} The result of the database insertion.
-   * @throws Will throw an error if the database operation fails.
-   */
   submitRegistration: async (registrationData: RegistrationData) => {
     const { data, error } = await supabase
       .from("registrations")
-      .insert([registrationData]);
+      .insert([registrationData])
+      .select();
 
     if (error) {
       throw error;
@@ -25,16 +15,11 @@ export const RegistrationService = {
     return data;
   },
 
-  /**
-   * Checks if an email is already taken using the Supabase RPC function.
-   *
-   * @param {string} email - The email address to check.
-   * @returns {Promise<boolean>} Returns true if the email is taken, false if it is available.
-   * @throws Will throw an error if the database operation fails.
-   */
   isEmailTaken: async (email: string) => {
+    const cleanEmail = email.trim().toLowerCase();
+
     const { data, error } = await supabase.rpc("is_email_registered", {
-      search_email: email,
+      search_email: cleanEmail,
     });
 
     if (error) {
@@ -43,9 +28,42 @@ export const RegistrationService = {
 
     return Boolean(data);
   },
+
   isWalletEmpty: async (email: string) => {
+    const cleanEmail = email.trim().toLowerCase();
+
     const { data, error } = await supabase.rpc("is_wallet_id_empty", {
-      input_email: email.trim().toLocaleLowerCase(),
+      input_email: cleanEmail,
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    return Boolean(data);
+  },
+
+  isWalletRegistered: async (walletAddress: string) => {
+    const cleanWalletAddress = walletAddress.trim().toLowerCase();
+
+    const { data, error } = await supabase.rpc("is_wallet_registered", {
+      search_wallet: cleanWalletAddress,
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    return Boolean(data);
+  },
+
+  linkWalletToEmail: async (email: string, walletAddress: string) => {
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanWalletAddress = walletAddress.trim().toLowerCase();
+
+    const { data, error } = await supabase.rpc("link_wallet_to_email", {
+      input_email: cleanEmail,
+      input_wallet: cleanWalletAddress,
     });
 
     if (error) {
