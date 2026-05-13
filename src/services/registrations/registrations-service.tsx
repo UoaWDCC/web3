@@ -1,7 +1,7 @@
 import { RegistrationData } from "../../lib/schemas/registration";
 import { supabase } from "../supabase";
 
-const PROFILE_PICTURE_BUCKET = "profile-pictures";
+const PROFILE_PICTURE_BUCKET = "profile_pictures";
 
 export const RegistrationService = {
   submitRegistration: async (registrationData: RegistrationData) => {
