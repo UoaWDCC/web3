@@ -61,7 +61,7 @@ export function Navbar() {
   return (
     <nav className="absolute z-50 bg-nav-bg border-b border-white/10
       w-[95%] sm:w-[90%] lg:w-[80%]
-      left-1/2 -translate-x-1/2 top-[3%] sm:top-[5%]
+      left-1/2 -translate-x-1/2 top-[3% ] sm:top-[5%]
       rounded-full text-nav-text shadow-lg">
 
       <div className="h-14 sm:h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 gap-4">
@@ -77,7 +77,7 @@ export function Navbar() {
         </Link>
 
         {/* Desktop links */}
-        <div className="hidden lg:flex items-center gap-[20%] xl:gap-12 mx-auto">
+        <div className="hidden xl:flex items-center gap-[20%] xl:gap-12 mx-auto">
           {navLinks.map((link) => (
             <Link
               key={link.href}
@@ -132,7 +132,7 @@ export function Navbar() {
      
 
         {/* Mobile menu button */}
-        <div className="lg:hidden flex items-center gap-2 flex-shrink-0">
+        <div className="xl:hidden flex items-center gap-2 flex-shrink-0">
           <Button
             size="sm"
             onClick={() => setTheme(theme === "light" ? "dark" : "light")}
