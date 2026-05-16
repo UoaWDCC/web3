@@ -6,6 +6,8 @@ import { Menu, X } from "lucide-react";
 import { useAccount } from "wagmi";
 import { isAllowedAdminAddress } from "@/lib/admin-auth";
 import Link from "next/link";
+import { usePathname } from 'next/navigation';  
+
 
 const navLinks = [
   { label: "About", href: "/pages/about" },
@@ -39,7 +41,7 @@ export function Navbar() {
     setTheme(saved || preferred);
   }, []);
 
-  // 3. Apply theme + save it whenever it changes for the theme 
+  // Apply theme + save it whenever it changes for the theme 
   useEffect(() => {
     document.documentElement.classList.add('theme-transitioning');
 
@@ -57,6 +59,17 @@ export function Navbar() {
   }, [theme]);
 
   const isAdmin = mounted && isAllowedAdminAddress(address);
+
+  // Determine active link based on current pathname. Exact match or sub-route match counts as active.
+  // Will need to change the code after we add the search page and join us page
+  // currently they are just anchors on the home page so they won't be active when user is on the home page
+  const pathname = usePathname();
+  const isActive = (href: string) => {
+    if (href.startsWith("#")) return false;
+
+    // exact match OR sub-route match
+    return pathname === href || pathname.startsWith(href + "/");
+  };
 
   return (
     <nav className="absolute z-50 bg-nav-bg border-b border-white/10
@@ -82,7 +95,10 @@ export function Navbar() {
             <Link
               key={link.href}
               href={link.href}
-              className="nav-bar-text text-base font-semibold tracking-wide transition-colors duration-100 hover:text-nav-text-hover whitespace-nowrap"
+              // frist state is true if active so the text is highlighted, second state is hover state for non-active links
+              className={`nav-bar-text text-base font-semibold tracking-wide transition-colors duration-100 whitespace-nowrap ${
+                isActive(link.href) ? "text-nav-text-hover" : "hover:text-nav-text-hover"
+              }`}
             >
               {link.label}
             </Link>
@@ -108,24 +124,10 @@ export function Navbar() {
               <Moon className="absolute inset-0 size-6 transition-opacity duration-300" style={{ opacity: theme === "light" ? 0 : 1 }} />
             </span>
           </Button>
-
-          {/* Comment it out, not sure should i delete this */}
-          {/*<Button
-            size="sm"
-            className="rounded-xl px-6 py-5 font-bold shadow-md hover:shadow-lg transition-transform hover:-translate-y-0.5"
-            asChild
-          >
-            
-              href="https://forms.gle/vzRb7t46SPBUwi7v8"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Join Us
-            </a>
-          </Button>*/}
         </div>
+        
         {/* Mobile menu button */}
-        <div className="xl:hidden flex items-center gap-2 flex-shrink-0">
+        <div className="lg:hidden flex items-center gap-2 flex-shrink-0">
           <Button
             size="sm"
             onClick={() => setTheme(theme === "light" ? "dark" : "light")}
@@ -157,7 +159,11 @@ export function Navbar() {
                 key={link.href}
                 href={link.href}
                 onClick={() => setMobileOpen(false)}
-                className="text-nav-text text-base font-semibold tracking-wide py-2.5 px-3 rounded-lg transition-all hover:bg-white/10 hover:text-primary"
+                className={`text-base font-semibold tracking-wide py-2.5 px-3 rounded-lg transition-all ${
+                  isActive(link.href)
+                    ? "text-nav-text-hover bg-white/10"
+                    : "text-nav-text hover:bg-white/10 hover:text-nav-text-hover"
+                }`}
               >
                 {link.label}
               </Link>
