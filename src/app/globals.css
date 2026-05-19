@@ -82,7 +82,7 @@
 
 /* this is for the color when toggle_theme this is for the light theme*/
 :root {
-  --background-theme: linear-gradient(90deg, #AFDCF1 0%, #ADD8F2 27%, #D3B7F3 100%);
+  --background-theme: linear-gradient(135deg, #c8dff5 0%, #ddd0e8 60%, #f8f4fc 100%);
   --color-nav-bar-text: rgba(0, 0, 0);
   --nav-bar-bg: rgba(255, 255, 255, 0.6);
   --color-button-b: rgb(63, 101, 226);
@@ -90,7 +90,7 @@
 
 /* dark theme*/
 .dark {
-  --background-theme: linear-gradient(90deg,#CAC1F7 0%,#A8A1CA 21%,#716D81 59%,#4E4C53 86%,#414042 100%);
+  --background-theme: radial-gradient(ellipse at top right, #b0c4d8 0%, #7b82b0 40%, #1a1a2e 100%);
   --color-nav-bar-bg: rgba(64, 66, 70, 0.6);
   --color-nav-text: rgba(255,255,255);
   --color-nav-bar-text: rgba(255, 255, 255);

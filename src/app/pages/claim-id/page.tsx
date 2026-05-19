@@ -36,7 +36,7 @@ export default function ClaimIdPage() {
         {/* HERO SECTION */}
         <div className="max-w-3xl mb-10">
 
-          <h1 className="text-5xl md:text-6xl font-black leading-tight mb-4 text-hero-text">
+          <h1 className="text-5xl md:text-6xl font-black leading-tight mb-4 text-hero-text ">
             Get your Web3 identity
           </h1>
 
