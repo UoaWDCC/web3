@@ -75,6 +75,9 @@ export const RegistrationService = {
     return Boolean(data);
   },
 
+  normalizeWalletAddress: (walletAddress: string) =>
+    walletAddress.trim().toLowerCase(),
+
   getProfilePicturePath: (email: string, file: File) => {
     const cleanEmail = email.trim().toLowerCase();
     const fileExtension = file.name.split(".").pop()?.toLowerCase();
@@ -89,7 +92,7 @@ export const RegistrationService = {
   uploadProfilePicture: async (email: string, file: File) => {
     const profilePicturePath = RegistrationService.getProfilePicturePath(
       email,
-      file
+      file,
     );
 
     const { error } = await supabase.storage
@@ -159,6 +162,23 @@ export const RegistrationService = {
     return data;
   },
 
+  getRegistrationByWallet: async (walletAddress: string) => {
+    const cleanWalletAddress =
+      RegistrationService.normalizeWalletAddress(walletAddress);
+
+    const { data, error } = await supabase
+      .from("registrations")
+      .select("*")
+      .ilike("wallet_id", cleanWalletAddress)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  },
+
   updateUniqueName: async (email: string, uniqueName: string) => {
     return RegistrationService.updateProfileByEmail({
       email,
@@ -208,7 +228,7 @@ export const RegistrationService = {
     if (file) {
       const uploadedImage = await RegistrationService.uploadProfilePicture(
         cleanEmail,
-        file
+        file,
       );
 
       profilePicturePath = uploadedImage.profilePicturePath;
@@ -268,9 +288,8 @@ export const RegistrationService = {
     const cleanEmail = email.trim().toLowerCase();
     const cleanBadge = badge.trim();
 
-    const registration = await RegistrationService.getRegistrationByEmail(
-      cleanEmail
-    );
+    const registration =
+      await RegistrationService.getRegistrationByEmail(cleanEmail);
 
     const currentBadges: string[] = registration.badges || [];
 
@@ -287,14 +306,13 @@ export const RegistrationService = {
     const cleanEmail = email.trim().toLowerCase();
     const cleanBadge = badge.trim();
 
-    const registration = await RegistrationService.getRegistrationByEmail(
-      cleanEmail
-    );
+    const registration =
+      await RegistrationService.getRegistrationByEmail(cleanEmail);
 
     const currentBadges: string[] = registration.badges || [];
 
     const updatedBadges = currentBadges.filter(
-      (currentBadge) => currentBadge !== cleanBadge
+      (currentBadge) => currentBadge !== cleanBadge,
     );
 
     return RegistrationService.updateBadges(cleanEmail, updatedBadges);
@@ -304,9 +322,8 @@ export const RegistrationService = {
     const cleanEmail = email.trim().toLowerCase();
     const cleanBadge = badge.trim();
 
-    const registration = await RegistrationService.getRegistrationByEmail(
-      cleanEmail
-    );
+    const registration =
+      await RegistrationService.getRegistrationByEmail(cleanEmail);
 
     const currentBadges: string[] = registration.badges || [];
 
@@ -336,9 +353,8 @@ export const RegistrationService = {
     const cleanEmail = email.trim().toLowerCase();
     const cleanEventName = eventName.trim();
 
-    const registration = await RegistrationService.getRegistrationByEmail(
-      cleanEmail
-    );
+    const registration =
+      await RegistrationService.getRegistrationByEmail(cleanEmail);
 
     const currentEventsAttended: string[] = registration.events_attended || [];
 
@@ -346,14 +362,11 @@ export const RegistrationService = {
       return registration;
     }
 
-    const updatedEventsAttended = [
-      ...currentEventsAttended,
-      cleanEventName,
-    ];
+    const updatedEventsAttended = [...currentEventsAttended, cleanEventName];
 
     return RegistrationService.updateEventsAttended(
       cleanEmail,
-      updatedEventsAttended
+      updatedEventsAttended,
     );
   },
 
@@ -361,19 +374,18 @@ export const RegistrationService = {
     const cleanEmail = email.trim().toLowerCase();
     const cleanEventName = eventName.trim();
 
-    const registration = await RegistrationService.getRegistrationByEmail(
-      cleanEmail
-    );
+    const registration =
+      await RegistrationService.getRegistrationByEmail(cleanEmail);
 
     const currentEventsAttended: string[] = registration.events_attended || [];
 
     const updatedEventsAttended = currentEventsAttended.filter(
-      (currentEvent) => currentEvent !== cleanEventName
+      (currentEvent) => currentEvent !== cleanEventName,
     );
 
     return RegistrationService.updateEventsAttended(
       cleanEmail,
-      updatedEventsAttended
+      updatedEventsAttended,
     );
   },
 
@@ -381,9 +393,8 @@ export const RegistrationService = {
     const cleanEmail = email.trim().toLowerCase();
     const cleanEventName = eventName.trim();
 
-    const registration = await RegistrationService.getRegistrationByEmail(
-      cleanEmail
-    );
+    const registration =
+      await RegistrationService.getRegistrationByEmail(cleanEmail);
 
     const currentEventsAttended: string[] = registration.events_attended || [];
 
