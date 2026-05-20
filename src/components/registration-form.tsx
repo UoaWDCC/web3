@@ -109,17 +109,19 @@ export function RegistrationForm() {
   };
 
   // Storing the shared styles in a variable keeps the JSX clean!
+  // Storing the shared styles in a variable keeps the JSX clean!
   const inputClass =
-    "w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all";
+    "w-full max-w-[620px] rounded-xl px-8 py-5 bg-white/60 focus:bg-white/90 text-[2rem] leading-none text-black shadow-xl outline-none transition-colors";
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
+    <div className="w-full">
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="w-full max-w-lg bg-white p-8 rounded-xl shadow-xl/20 flex flex-col gap-4"
+        className="mx-auto flex w-full flex-col items-center gap-5 rounded-[36px] bg-form p-8 md:p-12 shadow-xl/20"
+        // className="mx-auto flex w-full flex-col items-center gap-5 rounded-[36px] bg-[#90A6FF] p-8 md:p-12 shadow-xl/20"
         noValidate
       >
-        <h2 className="text-2xl font-bold text-gray-800 mb-2 text-center">
+        <h2 className="mb-3 text-center text-4xl font-bold text-slate-900">
           Join Our Team
         </h2>
 
@@ -159,49 +161,46 @@ export function RegistrationForm() {
         </FormSelect>
 
         {selectedUniversity && selectedUniversity !== UniversityType.None && (
-          <div className="flex flex-col gap-4">
-            {selectedUniversity &&
-              selectedUniversity !== UniversityType.Other && (
-                <div className="flex flex-row gap-4">
-                  {selectedUniversity &&
-                    selectedUniversity !== UniversityType.AUT && (
-                      <div className="flex-1">
-                        <FormInput
-                          className={inputClass}
-                          placeholder="UPI"
-                          error={errors.upi}
-                          registerProps={register("upi")}
-                        />
-                      </div>
-                    )}
-
-                  <div className="flex-1">
-                    <FormInput
-                      type="text"
-                      className={inputClass}
-                      numericOnly={true}
-                      placeholder="Student ID"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      error={errors.student_id}
-                      registerProps={register("student_id")}
-                    />
-                  </div>
-                </div>
-              )}
-
-            {selectedUniversity &&
-              selectedUniversity === UniversityType.Other && (
-                <div className="flex-1">
-                  <FormInput
-                    type="text"
-                    className={inputClass}
-                    placeholder="Other University"
-                    error={errors.university_other}
-                    registerProps={register("university_other")}
-                  />
-                </div>
-              )}
+          <div className="flex w-full max-w-[620px] flex-col gap-4">
+            {selectedUniversity === UniversityType.AUT ? (
+              <FormInput
+                type="text"
+                className={inputClass}
+                numericOnly={true}
+                placeholder="Student ID"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                error={errors.student_id}
+                registerProps={register("student_id")}
+              />
+            ) : selectedUniversity === UniversityType.Other ? (
+              <FormInput
+                type="text"
+                className={inputClass}
+                placeholder="Other University"
+                error={errors.university_other}
+                registerProps={register("university_other")}
+              />
+            ) : (
+              <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-2">
+                <FormInput
+                  className={inputClass}
+                  placeholder="UPI"
+                  error={errors.upi}
+                  registerProps={register("upi")}
+                />
+                <FormInput
+                  type="text"
+                  className={inputClass}
+                  numericOnly={true}
+                  placeholder="Student ID"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  error={errors.student_id}
+                  registerProps={register("student_id")}
+                />
+              </div>
+            )}
 
             <FormSelect
               className={inputClass}
@@ -253,7 +252,10 @@ export function RegistrationForm() {
 
         <button
           type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors mt-4 shadow-sm"
+          className="mt-4 mx-auto w-54 rounded-xl px-4 py-2.5 text-2xl 
+            bg-white dark:bg-[rgba(64,66,70)] text-button-txt dark:text-white 
+            transition-colors hover:bg-button-txt hover:text-button dark:hover:bg-white/80 dark:hover:text-[rgba(64,66,70)]
+            border-1 border-button-bor font-bold shadow-sm"
         >
           Submit
         </button>

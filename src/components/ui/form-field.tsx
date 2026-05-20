@@ -1,9 +1,6 @@
 // Mock UI components for temporary use
 import { UseFormRegisterReturn, FieldError } from "react-hook-form";
 
-const baseInputClass =
-  "w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all";
-
 interface FormInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   /**
    * Props provided by `react-hook-form`'s `register` function.
@@ -45,13 +42,8 @@ export function FormInput({
   };
 
   return (
-    <div>
-      <input
-        className={baseInputClass}
-        {...props}
-        {...registerProps}
-        onChange={handleChange}
-      />
+    <div className="w-full flex justify-center">
+      <input {...props} {...registerProps} onChange={handleChange} />
       {error && <p className="text-red-500 text-sm mt-1">{error.message}</p>}
     </div>
   );
@@ -87,8 +79,8 @@ export function FormSelect({
   ...props
 }: FormSelectProps) {
   return (
-    <div>
-      <select className={baseInputClass} {...props} {...registerProps}>
+    <div className="w-full flex justify-center">
+      <select {...props} {...registerProps}>
         {children}
       </select>
       {error && <p className="text-red-500 text-sm mt-1">{error.message}</p>}

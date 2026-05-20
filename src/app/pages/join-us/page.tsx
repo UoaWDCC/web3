@@ -2,34 +2,33 @@ import { RegistrationForm } from "../../../components/registration-form";
 
 export default function JoinUs() {
   return (
-    <section
-      id="join-us"
-      className="py-24 md:py-32 bg-background border-t border-border/50"
-    >
-      <div className="container mx-auto px-4">
-        {/* Section header */}
-        <div className=" space-y-4 max-w-2xl mx-auto text-center">
-          <span className="text-sm font-bold uppercase tracking-[0.2em] text-primary">
-            / Join Us
-          </span>
-          <h2 className="text-4xl md:text-5xl font-black tracking-tight text-foreground">
-            Join our Web3 Club
-          </h2>
-          <p className="text-lg text-muted-foreground leading-relaxed">
-            A student-led club at the University of Auckland for anyone
-            interested in blockchain, AI, and the wider Web3 space. Sign up to
-            learn, connect, and stay updated on events.
-            <br />
-            <br />
-            Bitcoin runs on Proof of Work. We run on Proof of Learn ✅
-          </p>
-        </div>
+    <main>
+      <section
+        id="join-us"
+        className="min-h-screen pt-54 px-4 pb-30 md:px-6"
+      >
+        <div className="mx-auto mt-10 mb-16 max-w-[1560px] rounded-[80px] bg-nav-bg p-8 md:p-14 lg:p-16 shadow-xl">
+          <div className="mx-auto max-w-[1320px] px-2 sm:px-4">
+            {/* Section header */}
+            <div className="mb-12 md:mb-16 space-y-5 max-w-4xl pl-8">
+              <h2 className="mb-4 text-6xl font-bold leading-none text-hero-text md:text-7xl lg:text-[5rem]">
+                Join Web3
+              </h2>
+              <p className="max-w-4xl text-xl pt-8 font-medium leading-tight text-hero-text font-sans md:text-2xl lg:text-[1.8rem]">
+                A student-led club at the University of Auckland for anyone
+                interested in blockchain, AI, and the wider Web3 space.
+                <br />
+                Sign up to learn, connect and stay updated on events.
+              </p>
+            </div>
 
-        {/* Sign up grid */}
-        <div className="max-w-2xl mx-auto w-full">
-          <RegistrationForm />
+            {/* Sign up grid */}
+            <div className="mx-auto w-full pb-30">
+              <RegistrationForm />
+            </div>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </main>
   );
 }
