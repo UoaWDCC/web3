@@ -94,7 +94,7 @@ export function RegistrationForm() {
    * @param {RegistrationData} data - The validated form data.
    */
   const onSubmit: SubmitHandler<RegistrationData> = async (data) => {
-    console.log(data);
+    console.log("Submitting", data);
 
     const emailTaken = await RegistrationService.isEmailTaken(data.email);
     if (emailTaken) {

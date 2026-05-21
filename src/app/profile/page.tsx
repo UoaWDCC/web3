@@ -1,9 +1,22 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useWallet } from "@/hooks/use-wallet";
 import { WalletButton } from "@/components/wallet-button";
 import { Copy, CheckCheck, PenTool } from "lucide-react";
+import { RegistrationService } from "@/services/registrations/registrations-service";
+
+const getErrorMessage = (error: unknown) => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof error === "object" && error !== null && "message" in error) {
+    return (error as { message?: string }).message ?? String(error);
+  }
+
+  return String(error);
+};
 
 export default function ProfilePage() {
   const { address, isConnected, disconnect, mounted } = useWallet();
@@ -11,6 +24,10 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState("Name");
   const [isEditingName, setIsEditingName] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [badges, setBadges] = useState<string[]>([]);
+  const [eventsAttended, setEventsAttended] = useState<string[]>([]);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const copyAddress = () => {
     if (!address) return;
@@ -19,28 +36,120 @@ export default function ProfilePage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setProfileImage(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (!file || !address) {
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    setProfileImage(previewUrl);
+    setStatusMessage("Uploading profile picture...");
+
+    try {
+      const registration =
+        await RegistrationService.getRegistrationByWallet(address);
+      if (!registration || !registration.email) {
+        throw new Error("Registration for wallet not found");
+      }
+
+      const result =
+        await RegistrationService.uploadProfilePictureAndUpdateRecord({
+          email: registration.email,
+          file,
+        });
+
+      setProfileImage(result.profilePictureUrl);
+      setBadges(result.record.badges ?? []);
+      setStatusMessage("Profile picture saved.");
+    } catch (error) {
+      const message = getErrorMessage(error);
+
+      console.error("Failed to upload profile picture", error);
+      setStatusMessage(`Failed to upload profile picture: ${message}`);
+    } finally {
+      event.target.value = "";
     }
   };
 
-  // Hardcoded 'badge elements', replace with a component later
-  const badgeItems: Record<number, null> = {};
-  for (let i = 0; i < 9; i += 1) {
-    badgeItems[i] = null;
-  }
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!address) {
+        setProfileLoading(false);
+        return;
+      }
 
-  // Hardcoded 'event history', replace this with a component later
-  const eventHistory = [
-    { id: 1, title: "Launch Party" },
-    { id: 2, title: "Hackathon" },
-  ];
+      setProfileLoading(true);
+      setStatusMessage(null);
+
+      try {
+        const registration =
+          await RegistrationService.getRegistrationByWallet(address);
+
+        if (registration) {
+          const displayNameFallback = registration.unique_name
+            ? registration.unique_name.trim()
+            : [registration.first_name, registration.last_name]
+                .filter(Boolean)
+                .join(" ")
+                .trim();
+
+          setDisplayName(displayNameFallback || "Name");
+          setProfileImage(registration.profile_picture_url || null);
+          setBadges(registration.badges || []);
+          setEventsAttended(registration.events_attended || []);
+        } else {
+          setDisplayName("Name");
+          setProfileImage(null);
+          setBadges([]);
+          setEventsAttended([]);
+          setStatusMessage("No profile data found for this wallet.");
+        }
+      } catch (error) {
+        console.error("Unable to load profile data", error);
+        setStatusMessage("Unable to load profile data.");
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+
+    if (mounted && isConnected) {
+      loadProfile();
+    }
+  }, [address, isConnected, mounted]);
+
+  const handleNameSave = async () => {
+    if (!address) {
+      return;
+    }
+
+    setStatusMessage("Saving display name...");
+
+    try {
+      const registration =
+        await RegistrationService.getRegistrationByWallet(address);
+      if (!registration || !registration.email) {
+        throw new Error("Registration for wallet not found");
+      }
+
+      const updated = await RegistrationService.updateProfileByEmail({
+        email: registration.email,
+        uniqueName: displayName,
+      });
+
+      setIsEditingName(false);
+      setDisplayName(updated.unique_name ?? displayName);
+      setBadges(updated.badges ?? badges);
+      setStatusMessage("Display name saved.");
+    } catch (error) {
+      const message = getErrorMessage(error);
+
+      console.error("Failed to save display name", error);
+      setStatusMessage(`Unable to save display name: ${message}`);
+    }
+  };
 
   if (!mounted) {
     return (
@@ -109,12 +218,12 @@ export default function ProfilePage() {
                   className="w-full md:w-auto text-xl font-bold border rounded px-3 py-2"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
-                      setIsEditingName(false);
+                      handleNameSave();
                     }
                   }}
                 />
                 <button
-                  onClick={() => setIsEditingName(false)}
+                  onClick={handleNameSave}
                   className="text-sm text-primary hover:underline"
                 >
                   Save
@@ -155,6 +264,11 @@ export default function ProfilePage() {
                 </button>
               </div>
             </div>
+            {statusMessage ? (
+              <div className="mt-4 text-sm text-muted-foreground">
+                {statusMessage}
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
@@ -164,13 +278,25 @@ export default function ProfilePage() {
         <div className="bg-white/80 w-full lg:w-[42vw] p-8 rounded-2xl min-h-[44vh] lg:min-h-[34vh] lg:mt-10">
           <p className="text-2xl font-bold">Badges</p>
 
-          <div className="mt-8 grid grid-cols-3 gap-4 sm:gap-6 justify-items-center">
-            {Object.keys(badgeItems).map((key) => (
-              <div
-                key={key}
-                className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-primary/10"
-              />
-            ))}
+          <div className="mt-8">
+            {profileLoading ? (
+              <p className="text-muted-foreground">Loading badges…</p>
+            ) : badges.length > 0 ? (
+              <div className="grid grid-cols-3 gap-4 sm:gap-6 justify-items-center">
+                {badges.map((badge, index) => (
+                  <div
+                    key={`${badge}-${index}`}
+                    className="w-full min-h-[5rem] rounded-3xl border border-primary/20 bg-primary/5 p-3 flex items-center justify-center text-center"
+                  >
+                    <span className="text-sm font-semibold text-primary">
+                      {badge}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground">No badges yet.</p>
+            )}
           </div>
         </div>
 
@@ -178,15 +304,23 @@ export default function ProfilePage() {
         <div className="bg-white/80 w-full lg:w-[34vw] p-8 rounded-2xl min-h-[52vh] lg:min-h-[34vh]">
           <p className="text-2xl font-bold">Events Attended</p>
 
-          <div className="mt-8 space-y-4">
-            {eventHistory.map((event) => (
-              <div
-                key={event.id}
-                className="rounded-3xl bg-primary/10 px-4 py-4 sm:px-6 sm:py-5"
-              >
-                <p className="font-semibold text-lg">{event.title}</p>
+          <div className="mt-8">
+            {profileLoading ? (
+              <p className="text-muted-foreground">Loading event history…</p>
+            ) : eventsAttended.length > 0 ? (
+              <div className="space-y-4">
+                {eventsAttended.map((eventName, index) => (
+                  <div
+                    key={`${eventName}-${index}`}
+                    className="rounded-3xl bg-primary/10 px-4 py-4 sm:px-6 sm:py-5"
+                  >
+                    <p className="font-semibold text-lg">{eventName}</p>
+                  </div>
+                ))}
               </div>
-            ))}
+            ) : (
+              <p className="text-muted-foreground">No events attended yet.</p>
+            )}
           </div>
         </div>
       </div>
