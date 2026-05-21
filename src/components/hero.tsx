@@ -4,12 +4,12 @@ import { Instagram, Linkedin, ArrowRight } from "lucide-react";
 export function Hero() {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden border-b border-border/50">
-      <div className="container relative z-10 px-4 pt-32 pb-20">
+      <div className="container relative z-12 px-25 pt-65 pb-10">
         <div className="flex flex-col lg:flex-row items-center justify-between gap-16">
           {/* Hero text (left side) */}
           <div className="flex-1 space-y-8 text-center lg:text-left">
-            <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-[7rem] font-black tracking-tight leading-[1.05]">
-              <span className="text-web3 font-russo">WEB3</span>
+            <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-[7rem] font-black tracking-tight[-0.05em] leading-[0.9] whitespace-nowrap">
+              <span className="text-web3 font-russo">WEB3 </span>
               <span className="text-uoa font-russo">UOA</span>
             </h1>
             <p className="text-hero-text text-xl md:text-2xl font-medium tracking-wide max-w-2xl mx-auto lg:mx-0">
