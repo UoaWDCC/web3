@@ -27,6 +27,8 @@ export default function ProfilePage() {
   const [badges, setBadges] = useState<string[]>([]);
   const [eventsAttended, setEventsAttended] = useState<string[]>([]);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [walletRegistered, setWalletRegistered] = useState(false);
+  const [walletChecking, setWalletChecking] = useState(true);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const copyAddress = () => {
@@ -75,18 +77,43 @@ export default function ProfilePage() {
   };
 
   useEffect(() => {
+    let cancelled = false;
+
     const loadProfile = async () => {
       if (!address) {
+        setWalletRegistered(false);
+        setWalletChecking(false);
         setProfileLoading(false);
         return;
       }
 
+      setWalletChecking(true);
       setProfileLoading(true);
       setStatusMessage(null);
 
       try {
+        const isRegistered = await RegistrationService.isWalletRegistered(
+          address,
+        );
+
+        if (cancelled) return;
+
+        if (!isRegistered) {
+          setWalletRegistered(false);
+          setDisplayName("Name");
+          setProfileImage(null);
+          setBadges([]);
+          setEventsAttended([]);
+          setStatusMessage("This wallet is not linked yet.");
+          return;
+        }
+
+        setWalletRegistered(true);
+
         const registration =
           await RegistrationService.getRegistrationByWallet(address);
+
+        if (cancelled) return;
 
         if (registration) {
           const displayNameFallback = registration.unique_name
@@ -108,16 +135,30 @@ export default function ProfilePage() {
           setStatusMessage("No profile data found for this wallet.");
         }
       } catch (error) {
+        if (cancelled) return;
+
         console.error("Unable to load profile data", error);
-        setStatusMessage("Unable to load profile data.");
+        setWalletRegistered(false);
+        setStatusMessage("Unable to check wallet registration.");
       } finally {
-        setProfileLoading(false);
+        if (!cancelled) {
+          setWalletChecking(false);
+          setProfileLoading(false);
+        }
       }
     };
 
     if (mounted && isConnected) {
       loadProfile();
+    } else {
+      setWalletRegistered(false);
+      setWalletChecking(false);
+      setProfileLoading(false);
     }
+
+    return () => {
+      cancelled = true;
+    };
   }, [address, isConnected, mounted]);
 
   const handleNameSave = async () => {
@@ -159,7 +200,7 @@ export default function ProfilePage() {
     );
   }
 
-  if (!isConnected) {
+  if (!isConnected || !walletRegistered) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[linear-gradient(180deg,_#AFDCF1_0%,_#ADD8F2_27%,_#D3B7F3_100%)]">
         <div className="text-center space-y-6 max-w-sm mx-auto px-4">
@@ -175,7 +216,11 @@ export default function ProfilePage() {
               Your Profile
             </h1>
             <p className="text-muted-foreground text-sm">
-              Connect your wallet to view your profile.
+              {walletChecking
+                ? "Checking your wallet..."
+                : isConnected
+                  ? "This wallet is not linked yet. Connect with a registered email first."
+                  : "Connect your wallet to view your profile."}
             </p>
           </div>
           <WalletButton />
