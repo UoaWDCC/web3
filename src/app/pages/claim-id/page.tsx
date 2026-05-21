@@ -31,16 +31,16 @@ export default function ClaimIdPage() {
     <main className="min-h-screen bg-gradient-to-r pt-28 px-4">
 
       {/* MAIN CONTAINER */}
-      <div className="max-w-6xl mx-auto bg-nav-bg rounded-[48px] p-8 md:p-16 shadow-xl mt-20 mb-20">
+      <div className="max-w-6xl mx-auto bg-nav-bg rounded-[48px] md:p-20 shadow-xl mt-20 mb-20">
 
         {/* HERO SECTION */}
-        <div className="max-w-3xl mb-10">
+        <div className="mb-10 md:mb-16 space-y-4 max-w-2xl">
 
-          <h1 className="text-5xl md:text-6xl font-black leading-tight mb-4 text-hero-text ">
+          <h1 className="text-5xl md:text-6xl font-black leading-tight mb-4 -mt-4 text-hero-text font-sans">
             Get your Web3 identity
           </h1>
 
-          <p className="text-xl md:text-xl text-black text-hero-text">
+          <p className="text-base sm:text-lg md:text-2xl text-hero-text font-sans font-medium">
             Ditch the long standard wallet addresses <br />
             Claim your personalised, readable Web3 identity <br />
             exclusive to University of Auckland Web3 Club members.
@@ -62,7 +62,7 @@ export default function ClaimIdPage() {
                 {/* Icon */}
                 <Icon className="w-50 h-30 text-white mb-10 self-center" />
                 {/* title */}
-                <h3 className="text-3xl font-bold mb-4 text-center">
+                <h3 className="text-2xl font-bold mb-4 text-center font-semibold">
                   {feature.title}
                 </h3>
                 {/* Description */}
