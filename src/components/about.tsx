@@ -25,7 +25,7 @@ const events = [
 export function About() {
   return (
 
-    <section id="about" className="py-24 md:py-32 bg-gradient-to-r border-t border-border/50">
+    <section id="about" className="min-h-screen bg-gradient-to-r pt-28 px-4">
       {/* MAIN CONTAINER */}
       <div className="w-full max-w-6xl mx-auto bg-nav-bg rounded-[48px] p-6 sm:p-10 md:p-16 shadow-xl my-10 md:my-20">
       <div className="container mx-auto px-2 sm:px-4">
@@ -37,7 +37,7 @@ export function About() {
             Decentralised Future
           </h2>
 
-          <p className="text-base sm:text-lg leading-relaxed text-hero-text font-sans">
+          <p className="text-base sm:text-lg leading-relaxed text-hero-text font-sans font-medium">
             We are Auckland's premier student-led organisation dedicated <br/>
             to blockchain education and innovation. We bridge the gap between <br/>
             university theory and industry-grade Web3 development.

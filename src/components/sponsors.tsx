@@ -57,7 +57,7 @@ export function Sponsors() {
             <h2 className="text-5xl md:text-6xl font-black leading-tight mb-4 text-hero-text font-sans">
               Our Sponsors
             </h2>
-            <p className="text-base sm:text-lg md:text-2xl text-hero-text font-sans font-medium">
+            <p className="text-base sm:text-lg md:text-xl text-hero-text font-sans font-medium">
               Collaborating with industry leaders to drive<br />
               the future of Web3 in New Zealand.
             </p>

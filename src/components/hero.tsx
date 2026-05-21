@@ -9,7 +9,7 @@ export function Hero() {
           {/* Hero text (left side) */}
           <div className="flex-1 space-y-8 text-center lg:text-left">
             <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-[7rem] font-black tracking-tight leading-[1.05]">
-              <span className="text-web3 font-russo">WEB3</span>
+              <span className="text-web3 font-russo">WEB3 </span>
               <span className="text-uoa font-russo">UOA</span>
             </h1>
             <p className="text-hero-text text-xl md:text-2xl font-medium tracking-wide max-w-2xl mx-auto lg:mx-0">
@@ -75,8 +75,7 @@ export function Hero() {
                 <Linkedin className="w-6 h-6" />
               </a>
             </div>
-          </div> 
-
+          </div>
 
           {/* Logo element (right side) */}
           <div className="flex-1 flex justify-center lg:justify-end items-center relative">

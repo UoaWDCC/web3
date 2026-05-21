@@ -40,7 +40,7 @@ export default function ClaimIdPage() {
             Get your Web3 identity
           </h1>
 
-          <p className="text-xl md:text-xl text-black text-hero-text">
+          <p className="text-xl md:text-xl text-black text-hero-text font-medium">
             Ditch the long standard wallet addresses <br />
             Claim your personalised, readable Web3 identity <br />
             exclusive to University of Auckland Web3 Club members.
