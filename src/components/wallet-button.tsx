@@ -59,11 +59,6 @@ export function WalletButton() {
     "!bg-nav-bg !border-button-bor !text-button-bor " +
     "transition-all hover:!bg-button-bor hover:!text-white";
 
-  const buttonClass =
-    "text-base px-6 h-14 border-2 rounded-xl font-bold " +
-    "inline-flex items-center justify-center " +
-    "!bg-nav-bg !border-button-bor !text-button-bor " +
-    "transition-all hover:!bg-button-bor hover:!text-white";
 
   if (!mounted) {
     return (
