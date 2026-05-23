@@ -14,6 +14,7 @@ const navLinks = [
   { label: "Events", href: "/pages/events" },
   { label: "Partners", href: "/pages/partners" },
   { label: "Search", href: "#search" },
+  { label: "Join Us", href: "/pages/join-us" },
 ];
 
 export function Navbar() {

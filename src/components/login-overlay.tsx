@@ -34,7 +34,7 @@ function truncateAddress(address: string) {
 }
 
 export function LoginOverlay({ onClose, onLoginSuccess }: LoginOverlayProps) {
-  const { address, isConnected, connect } = useWallet();
+  const { address, isConnected, connect, disconnect } = useWallet();
 
   const [isMounted, setIsMounted] = useState(false);
   const [walletStatus, setWalletStatus] = useState<WalletStatus>("idle");
@@ -114,6 +114,19 @@ export function LoginOverlay({ onClose, onLoginSuccess }: LoginOverlayProps) {
       setWalletStatus("error");
       setMessage("Could not connect wallet.");
     }
+  };
+
+  const handleChangeWallet = async () => {
+    setEmail("");
+    setEmailStatus("idle");
+    setWalletStatus("connecting");
+    setMessage("Opening wallet chooser...");
+
+    disconnect();
+
+    window.setTimeout(() => {
+      connect();
+    }, 300);
   };
 
   const handleConnectEmailToWallet = async () => {
@@ -227,7 +240,16 @@ export function LoginOverlay({ onClose, onLoginSuccess }: LoginOverlayProps) {
               <p className="text-muted-foreground dark:text-white/65">
                 Connected wallet
               </p>
-              <p className="font-bold">{truncateAddress(address)}</p>
+              <div className="mt-1 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="font-bold">{truncateAddress(address)}</p>
+                <button
+                  onClick={handleChangeWallet}
+                  className="text-left text-sm font-bold text-primary hover:underline dark:text-[#A3DEF4]"
+                  type="button"
+                >
+                  Change wallet
+                </button>
+              </div>
             </div>
 
             {walletStatus === "checking" && (
