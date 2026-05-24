@@ -34,7 +34,7 @@ function truncateAddress(address: string) {
 }
 
 export function LoginOverlay({ onClose, onLoginSuccess }: LoginOverlayProps) {
-  const { address, isConnected, connect } = useWallet();
+  const { address, isConnected, connect, disconnect } = useWallet();
 
   const [isMounted, setIsMounted] = useState(false);
   const [walletStatus, setWalletStatus] = useState<WalletStatus>("idle");
@@ -116,6 +116,19 @@ export function LoginOverlay({ onClose, onLoginSuccess }: LoginOverlayProps) {
     }
   };
 
+  const handleChangeWallet = async () => {
+    setEmail("");
+    setEmailStatus("idle");
+    setWalletStatus("connecting");
+    setMessage("Opening wallet chooser...");
+
+    disconnect();
+
+    window.setTimeout(() => {
+      connect();
+    }, 300);
+  };
+
   const handleConnectEmailToWallet = async () => {
     if (!address) {
       setEmailStatus("error");
@@ -184,14 +197,14 @@ export function LoginOverlay({ onClose, onLoginSuccess }: LoginOverlayProps) {
   const overlay = (
     <div className="fixed inset-0 z-40 flex items-center justify-center px-4">
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm dark:bg-black/75"
         onClick={onClose}
       />
 
-      <div className="relative z-10 w-full max-w-md rounded-2xl border bg-background p-6 shadow-2xl">
+      <div className="relative z-10 w-full max-w-md rounded-2xl border border-border/80 bg-white p-6 text-foreground shadow-2xl dark:border-white/15 dark:bg-[#404246] dark:text-white">
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 rounded-full p-1 hover:bg-muted"
+          className="absolute right-4 top-4 rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-white"
           aria-label="Close login overlay"
           type="button"
         >
@@ -199,8 +212,10 @@ export function LoginOverlay({ onClose, onLoginSuccess }: LoginOverlayProps) {
         </button>
 
         <div className="mb-6">
-          <h2 className="text-xl font-bold">Connect Wallet</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <h2 className="text-xl font-bold text-foreground dark:text-white">
+            Connect Wallet
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground dark:text-white/70">
             Connect your wallet to access your profile.
           </p>
         </div>
@@ -221,32 +236,43 @@ export function LoginOverlay({ onClose, onLoginSuccess }: LoginOverlayProps) {
 
         {isConnected && address && (
           <div className="space-y-4">
-            <div className="rounded-xl border bg-muted/40 p-3 text-sm">
-              <p className="text-muted-foreground">Connected wallet</p>
-              <p className="font-bold">{truncateAddress(address)}</p>
+            <div className="rounded-xl border border-border/80 bg-muted/40 p-3 text-sm dark:border-white/15 dark:bg-white/10">
+              <p className="text-muted-foreground dark:text-white/65">
+                Connected wallet
+              </p>
+              <div className="mt-1 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="font-bold">{truncateAddress(address)}</p>
+                <button
+                  onClick={handleChangeWallet}
+                  className="text-left text-sm font-bold text-primary hover:underline dark:text-[#A3DEF4]"
+                  type="button"
+                >
+                  Change wallet
+                </button>
+              </div>
             </div>
 
             {walletStatus === "checking" && (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground dark:text-white/70">
                 Checking wallet...
               </p>
             )}
 
             {walletStatus === "registered" && (
-              <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-3 text-sm text-green-600">
+              <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-3 text-sm text-green-700 dark:border-green-300/30 dark:bg-green-300/10 dark:text-green-200">
                 Wallet is registered. You are logged in.
               </div>
             )}
 
             {walletStatus === "not_registered" && (
               <div className="space-y-3">
-                <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-3 text-sm text-yellow-700">
+                <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-3 text-sm text-yellow-800 dark:border-yellow-300/30 dark:bg-yellow-300/10 dark:text-yellow-100">
                   This wallet is not linked yet. Enter your registered email to
                   connect it.
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium">
+                  <label className="text-sm font-medium text-foreground dark:text-white">
                     Registered email
                   </label>
                   <input
@@ -258,7 +284,7 @@ export function LoginOverlay({ onClose, onLoginSuccess }: LoginOverlayProps) {
                       setEmailStatus("idle");
                       setMessage("");
                     }}
-                    className="mt-1 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+                    className="mt-1 w-full rounded-xl border border-input bg-white px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary dark:border-white/15 dark:bg-[#2f3136] dark:text-white dark:placeholder:text-white/45"
                   />
                 </div>
 
@@ -281,7 +307,7 @@ export function LoginOverlay({ onClose, onLoginSuccess }: LoginOverlayProps) {
             )}
 
             {walletStatus === "error" && (
-              <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-600">
+              <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-600 dark:border-red-300/30 dark:bg-red-300/10 dark:text-red-200">
                 Could not check wallet.
               </div>
             )}
@@ -293,10 +319,10 @@ export function LoginOverlay({ onClose, onLoginSuccess }: LoginOverlayProps) {
             className={`mt-4 text-sm ${
               emailStatus === "invalid" ||
               emailStatus === "wallet_not_empty" ||
-              emailStatus === "error" ||
-              walletStatus === "error"
-                ? "text-red-600"
-                : "text-muted-foreground"
+                emailStatus === "error" ||
+                walletStatus === "error"
+                ? "text-red-600 dark:text-red-200"
+                : "text-muted-foreground dark:text-white/70"
             }`}
           >
             {message}
