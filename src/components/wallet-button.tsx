@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useWallet } from "@/hooks/use-wallet";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { LoginOverlay } from "./login-overlay";
 import { RegistrationService } from "../services/registrations/registrations-service";
 
@@ -15,6 +16,7 @@ type AuthStatus = "idle" | "checking" | "logged_in" | "logged_out" | "error";
 
 export function WalletButton() {
   const { address, isConnected, mounted } = useWallet();
+  const router = useRouter();
 
   const [showLogin, setShowLogin] = useState(false);
   const [authStatus, setAuthStatus] = useState<AuthStatus>("idle");
@@ -22,7 +24,8 @@ export function WalletButton() {
   const handleLoginSuccess = useCallback(() => {
     setAuthStatus("logged_in");
     setShowLogin(false);
-  }, []);
+    router.push("/profile");
+  }, [router]);
 
   useEffect(() => {
     const checkAuth = async () => {
