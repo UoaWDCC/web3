@@ -1,4 +1,5 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
+let _supabase: SupabaseClient | null = null;
 
 /**
  * Creates and exports a Supabase client instance.
@@ -7,17 +8,20 @@ import { createClient } from "@supabase/supabase-js";
  *
  * @see https://supabase.com/docs/client/imports
  */
-export const supabase = (() => {
+export function getSupabase(): SupabaseClient {
+  if (_supabase) return _supabase;
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error(
       "Missing Supabase environment variables " +
-        (supabaseUrl ? "" : "NEXT_PUBLIC_SUPABASE_URL") +
+        (supabaseUrl ? "" : "NEXT_PUBLIC_SUPABASE_URL ") +
         (supabaseAnonKey ? "" : "NEXT_PUBLIC_SUPABASE_ANON_KEY"),
     );
   }
 
-  return createClient(supabaseUrl, supabaseAnonKey);
-})();
+  _supabase = createClient(supabaseUrl, supabaseAnonKey);
+  return _supabase;
+}

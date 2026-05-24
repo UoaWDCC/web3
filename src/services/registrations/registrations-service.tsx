@@ -1,10 +1,11 @@
 import { RegistrationData } from "../../lib/schemas/registration";
-import { supabase } from "../supabase";
+import { getSupabase } from "../supabase";
 
 const PROFILE_PICTURE_BUCKET = "profile_pictures";
-
+export const dynamic = "force-dynamic";
 export const RegistrationService = {
   submitRegistration: async (registrationData: RegistrationData) => {
+    const supabase = getSupabase();
     const { data, error } = await supabase
       .from("registrations")
       .insert([registrationData])
@@ -19,7 +20,7 @@ export const RegistrationService = {
 
   isEmailTaken: async (email: string) => {
     const cleanEmail = email.trim().toLowerCase();
-
+    const supabase = getSupabase();
     const { data, error } = await supabase.rpc("is_email_registered", {
       search_email: cleanEmail,
     });
@@ -33,7 +34,7 @@ export const RegistrationService = {
 
   isWalletEmpty: async (email: string) => {
     const cleanEmail = email.trim().toLowerCase();
-
+    const supabase = getSupabase();
     const { data, error } = await supabase.rpc("is_wallet_id_empty", {
       input_email: cleanEmail,
     });
@@ -47,7 +48,7 @@ export const RegistrationService = {
 
   isWalletRegistered: async (walletAddress: string) => {
     const cleanWalletAddress = walletAddress.trim().toLowerCase();
-
+    const supabase = getSupabase();
     const { data, error } = await supabase.rpc("is_wallet_registered", {
       search_wallet: cleanWalletAddress,
     });
@@ -62,7 +63,7 @@ export const RegistrationService = {
   linkWalletToEmail: async (email: string, walletAddress: string) => {
     const cleanEmail = email.trim().toLowerCase();
     const cleanWalletAddress = walletAddress.trim().toLowerCase();
-
+    const supabase = getSupabase();
     const { data, error } = await supabase.rpc("link_wallet_to_email", {
       input_email: cleanEmail,
       input_wallet: cleanWalletAddress,
@@ -90,11 +91,12 @@ export const RegistrationService = {
   },
 
   uploadProfilePicture: async (email: string, file: File) => {
+    const supabase = getSupabase();
     const profilePicturePath = RegistrationService.getProfilePicturePath(
       email,
       file,
     );
-
+    
     const { error } = await supabase.storage
       .from(PROFILE_PICTURE_BUCKET)
       .upload(profilePicturePath, file, {
@@ -128,6 +130,7 @@ export const RegistrationService = {
     profilePicturePath?: string;
     profilePictureUrl?: string;
   }) => {
+    const supabase = getSupabase();
     const cleanEmail = email.trim().toLowerCase();
 
     const updateData: {
@@ -163,6 +166,7 @@ export const RegistrationService = {
   },
 
   getRegistrationByWallet: async (walletAddress: string) => {
+    const supabase = getSupabase();
     const cleanWalletAddress =
       RegistrationService.normalizeWalletAddress(walletAddress);
 
@@ -251,7 +255,7 @@ export const RegistrationService = {
 
   getRegistrationByEmail: async (email: string) => {
     const cleanEmail = email.trim().toLowerCase();
-
+    const supabase = getSupabase();
     const { data, error } = await supabase
       .from("registrations")
       .select("*")
@@ -267,7 +271,7 @@ export const RegistrationService = {
 
   updateBadges: async (email: string, badges: string[]) => {
     const cleanEmail = email.trim().toLowerCase();
-
+    const supabase = getSupabase();
     const { data, error } = await supabase
       .from("registrations")
       .update({
@@ -332,7 +336,7 @@ export const RegistrationService = {
 
   updateEventsAttended: async (email: string, eventsAttended: string[]) => {
     const cleanEmail = email.trim().toLowerCase();
-
+    const supabase = getSupabase();
     const { data, error } = await supabase
       .from("registrations")
       .update({

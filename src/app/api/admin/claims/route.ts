@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { verifyMessage } from "viem";
 import { isAllowedAdminAddress } from "@/lib/admin-auth";
 
@@ -36,6 +36,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
 
+  const prisma = getPrisma();
   try {
     const claims = await prisma.claimRequest.findMany({
       where: status ? { status } : undefined,
@@ -56,6 +57,7 @@ export async function PUT(req: NextRequest) {
   if (!isAuth)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const prisma = getPrisma(); 
   try {
     const body = await req.json();
     const { id, status } = body; // status can be "APPROVED", "REJECTED"

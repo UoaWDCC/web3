@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { setName } from "@/lib/namestone";
 import { verifyMessage } from "viem";
 import { isAllowedAdminAddress } from "@/lib/admin-auth";
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   const isAuth = await verifyAdminAuth(req);
   if (!isAuth)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+  const prisma = getPrisma();
   try {
     const { claimId } = await req.json();
 

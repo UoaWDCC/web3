@@ -7,7 +7,7 @@ const normalizeDatabaseUrl = (value?: string) => {
   return value.trim().replace(/^['\"]+|['\"]+$/g, "");
 };
 
-const prismaClientSingleton = () => {
+const createPrismaClient = () => {
   const databaseUrl = normalizeDatabaseUrl(process.env.DATABASE_URL);
 
   if (!databaseUrl) {
@@ -24,21 +24,28 @@ const prismaClientSingleton = () => {
   }
 
   if (protocol !== "postgresql:" && protocol !== "postgres:") {
-    throw new Error(
-      "DATABASE_URL must start with postgresql:// or postgres://",
-    );
+    throw new Error("DATABASE_URL must start with postgresql:// or postgres://");
   }
 
   const pool = new Pool({ connectionString: databaseUrl });
   const adapter = new PrismaPg(pool);
-  const client = new PrismaClient({ adapter });
-  return client;
+  return new PrismaClient({ adapter });
 };
 
-declare const globalThis: {
-  prismaGlobal: ReturnType<typeof prismaClientSingleton>;
-} & typeof global;
+declare global {
+  // eslint-disable-next-line no-var
+  var prismaGlobal: PrismaClient | undefined;
+}
 
-export const prisma = globalThis.prismaGlobal ?? prismaClientSingleton();
-
-if (process.env.NODE_ENV !== "production") globalThis.prismaGlobal = prisma;
+/**
+ * Lazy Prisma accessor.
+ * Safe to import during `next build` because it does not read env / connect
+ * until you call it inside a request handler.
+ */
+export const getPrisma = (): PrismaClient => {
+  if (process.env.NODE_ENV !== "production") {
+    globalThis.prismaGlobal ??= createPrismaClient();
+    return globalThis.prismaGlobal;
+  }
+  return createPrismaClient();
+};
