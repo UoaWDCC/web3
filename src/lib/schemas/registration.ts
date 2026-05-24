@@ -25,14 +25,6 @@ export enum FacultyType {
   Other = "OTHER",
 }
 
-const normalizeEmpty = (value: unknown) => {
-  if (typeof value === "string" && value.trim() === "") {
-    return null;
-  }
-
-  return value;
-};
-
 // Keep this as a single object schema so empty selects produce friendly
 // validation messages, while superRefine handles the university-specific rules.
 const RegistrationSchema = z
@@ -48,14 +40,8 @@ const RegistrationSchema = z
     university_other: z.string().trim().nullable().optional(),
     upi: z.string().trim().nullable().optional(),
     student_id: z.string().trim().nullable().optional(),
-    degree_type: z.preprocess(
-      normalizeEmpty,
-      z.nativeEnum(DegreeType).nullable().optional(),
-    ),
-    faculty: z.preprocess(
-      normalizeEmpty,
-      z.nativeEnum(FacultyType).nullable().optional(),
-    ),
+    degree_type: z.nativeEnum(DegreeType).nullable().optional(),
+    faculty: z.nativeEnum(FacultyType).nullable().optional(),
     goal_statement: z.string().trim().nullable().optional(),
   })
   .superRefine((data, ctx) => {
