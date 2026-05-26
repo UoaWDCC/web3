@@ -77,7 +77,7 @@ export function LoginOverlay({ onClose, onLoginSuccess }: LoginOverlayProps) {
 
       try {
         setWalletStatus("checking");
-        setMessage("Checking wallet...");
+        setMessage("");
 
         const walletRegistered =
           await RegistrationService.isWalletRegistered(address);
