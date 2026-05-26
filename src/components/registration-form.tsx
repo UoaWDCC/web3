@@ -94,7 +94,7 @@ export function RegistrationForm() {
    * @param {RegistrationData} data - The validated form data.
    */
   const onSubmit: SubmitHandler<RegistrationData> = async (data) => {
-    console.log(data);
+    console.log("Submitting", data);
 
     const emailTaken = await RegistrationService.isEmailTaken(data.email);
     if (emailTaken) {
@@ -161,46 +161,49 @@ export function RegistrationForm() {
         </FormSelect>
 
         {selectedUniversity && selectedUniversity !== UniversityType.None && (
-          <div className="flex w-full max-w-[620px] flex-col gap-4">
-            {selectedUniversity === UniversityType.AUT ? (
-              <FormInput
-                type="text"
-                className={inputClass}
-                numericOnly={true}
-                placeholder="Student ID"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                error={errors.student_id}
-                registerProps={register("student_id")}
-              />
-            ) : selectedUniversity === UniversityType.Other ? (
-              <FormInput
-                type="text"
-                className={inputClass}
-                placeholder="Other University"
-                error={errors.university_other}
-                registerProps={register("university_other")}
-              />
-            ) : (
-              <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-2">
-                <FormInput
-                  className={inputClass}
-                  placeholder="UPI"
-                  error={errors.upi}
-                  registerProps={register("upi")}
-                />
-                <FormInput
-                  type="text"
-                  className={inputClass}
-                  numericOnly={true}
-                  placeholder="Student ID"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  error={errors.student_id}
-                  registerProps={register("student_id")}
-                />
-              </div>
-            )}
+          <div className="flex flex-col gap-4">
+            {selectedUniversity &&
+              selectedUniversity !== UniversityType.Other && (
+                <div className="flex flex-row gap-4">
+                  {selectedUniversity &&
+                    selectedUniversity !== UniversityType.AUT && (
+                      <div className="flex-1">
+                        <FormInput
+                          className={inputClass}
+                          placeholder="UPI"
+                          error={errors.upi}
+                          registerProps={register("upi")}
+                        />
+                      </div>
+                    )}
+
+                  <div className="flex-1">
+                    <FormInput
+                      type="text"
+                      className={inputClass}
+                      numericOnly={true}
+                      placeholder="Student ID"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      error={errors.student_id}
+                      registerProps={register("student_id")}
+                    />
+                  </div>
+                </div>
+              )}
+
+            {selectedUniversity &&
+              selectedUniversity === UniversityType.Other && (
+                <div className="flex-1">
+                  <FormInput
+                    type="text"
+                    className={inputClass}
+                    placeholder="Other University"
+                    error={errors.university_other}
+                    registerProps={register("university_other")}
+                  />
+                </div>
+              )}
 
             <FormSelect
               className={inputClass}
