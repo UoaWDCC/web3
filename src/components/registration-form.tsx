@@ -34,6 +34,7 @@ export function RegistrationForm() {
     watch,
     setValue,
     clearErrors,
+    setError
   } = useForm<RegistrationData>({
     resolver: zodResolver(RegistrationSchema),
   });
@@ -100,7 +101,10 @@ export function RegistrationForm() {
 
     const emailTaken = await RegistrationService.isEmailTaken(data.email);
     if (emailTaken) {
-      alert("Email is already taken");
+      setError("email", {
+        type: "custom",
+        message: "This email is already registered"
+      })
       return;
     }
 
