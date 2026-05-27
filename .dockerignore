@@ -1,12 +1,33 @@
+# VCS / CI
 .git
 .github
+
+# Build output
 .next
+dist
+out
+coverage
+
+# Dependencies
 node_modules
+
+# Logs
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 bun-debug.log*
+
+# Local env (keep .env.example)
 .env
 .env.*
 !.env.example
-Dockerfile
-README.md
+
+# Tooling caches
 tsconfig.tsbuildinfo
+.turbo
+.cache
+
+# OS/editor junk
+.DS_Store
+.vscode

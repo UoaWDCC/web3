@@ -14,10 +14,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      - run: >
-          flyctl deploy --remote-only
-          --build-arg NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          --build-arg NEXT_PUBLIC_REOWN_PROJECT_ID=${{ secrets.NEXT_PUBLIC_REOWN_PROJECT_ID }}
+      - run: |
+          flyctl deploy --remote-only --verbose \
+            --build-arg NEXT_PUBLIC_SUPABASE_URL="${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" \
+            --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY="${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" \
+            --build-arg NEXT_PUBLIC_REOWN_PROJECT_ID="${{ secrets.NEXT_PUBLIC_REOWN_PROJECT_ID }}" \
+            --build-arg NEXT_PUBLIC_ADMIN_ADDRESS="${{ secrets.NEXT_PUBLIC_ADMIN_ADDRESS }}" \
+            --build-arg NEXT_PUBLIC_ADMIN_ADDRESSES="${{ secrets.NEXT_PUBLIC_ADMIN_ADDRESSES }}"
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
