@@ -37,7 +37,7 @@ export function About() {
             Decentralised Future
           </h2>
 
-          <p className="text-base sm:text-lg leading-relaxed text-hero-text font-sans">
+          <p className="text-base sm:text-lg leading-relaxed text-hero-text font-sans font-medium">
             We are Auckland's premier student-led organisation dedicated <br/>
             to blockchain education and innovation. We bridge the gap between <br/>
             university theory and industry-grade Web3 development.

@@ -19,7 +19,8 @@ const navLinks = [
   // { label: "Partners", href: "#partners" },
   { label: "Search", href: "#search" }, // TODO: add search page
   { label: "Join Us", href: "/pages/join-us" },
-  { label: "Connect Wallet", href: "/pages/claim-id" }, // TODO: add wallet connection
+  { label: "Claim ID", href: "/pages/claim-id" },
+  //{ label: "Connect Wallet", href: "/pages/claim-id" }, // TODO: add wallet connection
   //{ label: "Claim your Web3 ID!", href: "#identity", isCTA: true }  // not sure if need 
 ];
 
