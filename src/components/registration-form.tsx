@@ -94,7 +94,7 @@ export function RegistrationForm() {
    * @param {RegistrationData} data - The validated form data.
    */
   const onSubmit: SubmitHandler<RegistrationData> = async (data) => {
-    console.log(data);
+    console.log("Submitting", data);
 
     const emailTaken = await RegistrationService.isEmailTaken(data.email);
     if (emailTaken) {
@@ -127,27 +127,27 @@ export function RegistrationForm() {
           className={inputClass}
           placeholder="First Name"
           error={errors.first_name}
-          {...register("first_name")}
+          registerProps={register("first_name")}
         />
         <FormInput
           className={inputClass}
           placeholder="Last Name"
           error={errors.last_name}
-          {...register("last_name")}
+          registerProps={register("last_name")}
         />
         <FormInput
           type="email"
           className={inputClass}
           placeholder="Email"
           error={errors.email}
-          {...register("email")}
+          registerProps={register("email")}
         />
 
         <FormSelect
           className={inputClass}
           defaultValue=""
           error={errors.university}
-          {...register("university")}
+          registerProps={register("university")}
         >
           <option value="" disabled>
             Select University
@@ -170,7 +170,7 @@ export function RegistrationForm() {
                           className={inputClass}
                           placeholder="UPI"
                           error={errors.upi}
-                          {...register("upi")}
+                          registerProps={register("upi")}
                         />
                       </div>
                     )}
@@ -184,7 +184,7 @@ export function RegistrationForm() {
                       inputMode="numeric"
                       pattern="[0-9]*"
                       error={errors.student_id}
-                      {...register("student_id")}
+                      registerProps={register("student_id")}
                     />
                   </div>
                 </div>
@@ -198,7 +198,7 @@ export function RegistrationForm() {
                     className={inputClass}
                     placeholder="Other University"
                     error={errors.university_other}
-                    {...register("university_other")}
+                    registerProps={register("university_other")}
                   />
                 </div>
               )}
@@ -207,7 +207,9 @@ export function RegistrationForm() {
               className={inputClass}
               defaultValue=""
               error={errors.degree_type}
-              {...register("degree_type")}
+              registerProps={register("degree_type", {
+                setValueAs: (value) => (value === "" ? null : value),
+              })}
             >
               <option value="" disabled>
                 Select Degree Type
@@ -227,7 +229,9 @@ export function RegistrationForm() {
               className={inputClass}
               defaultValue=""
               error={errors.faculty}
-              {...register("faculty")}
+              registerProps={register("faculty", {
+                setValueAs: (value) => (value === "" ? null : value),
+              })}
             >
               <option value="" disabled>
                 Select Faculty

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -9,7 +9,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Address is required" }, { status: 400 });
   }
 
+
   try {
+    const prisma = getPrisma();
     const claims = await prisma.claimRequest.findMany({
       where: {
         walletAddress: address.toLowerCase(),
@@ -29,7 +31,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+
   try {
+    const prisma = getPrisma();
     const body = await req.json();
     const { walletAddress, requestedName } = body;
     const normalizedWalletAddress = walletAddress?.toLowerCase();
