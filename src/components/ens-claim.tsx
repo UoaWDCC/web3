@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAccount, useDisconnect } from "wagmi";
-import { useAppKit } from "@reown/appkit/react";
-import { Wallet } from "lucide-react";
+import { useWallet } from "@/hooks/use-wallet";
+import { WalletButton } from "@/components/wallet-button";
 import { Button } from "./ui/button";
+import { RegistrationService } from "../services/registrations/registrations-service";
 
 interface Claim {
   id: string;
@@ -13,18 +13,18 @@ interface Claim {
 }
 
 export function EnsClaim() {
-  const { address, isConnected } = useAccount();
-  const { disconnect } = useDisconnect();
-  const { open } = useAppKit();
+  const { address, isConnected, disconnect, mounted } = useWallet();
   const [requestedName, setRequestedName] = useState("");
   const [claims, setClaims] = useState<Claim[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const [email, setEmail] = useState("");
+  const [emailStatus, setEmailStatus] = useState<"idle" | "checking" | "valid" | "invalid">("idle");
+  const [walletEmptyStatus, setWalletEmptyStatus] = useState<"idle" | "checking" | "valid" | "invalid">("idle");
+  const canConnect = emailStatus === "valid" && walletEmptyStatus === "valid";
+  const [walletSaved, setWalletSaved] = useState(false);
+  
 
   useEffect(() => {
     if (address) {
@@ -33,6 +33,44 @@ export function EnsClaim() {
       setClaims([]);
     }
   }, [address]);
+  
+  useEffect(() => {
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (!cleanEmail) {
+      setEmailStatus("idle");
+      return;
+    }
+
+    const isEmailFormatValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail);
+
+    if (!isEmailFormatValid) {
+      setEmailStatus("invalid");
+      return;
+    }
+
+    const timeout = setTimeout(async () => {
+      try {
+        setEmailStatus("checking");
+
+        const exists = await RegistrationService.isEmailTaken(cleanEmail);
+        const wallet_empty = await RegistrationService.isWalletEmpty(cleanEmail);
+        console.log(wallet_empty)
+        setEmailStatus(exists ? "valid" : "invalid");
+        setWalletEmptyStatus(wallet_empty ? "valid" : "invalid")
+        
+      } catch (err) {
+        console.error("Email check failed:", err);
+        setEmailStatus("invalid");
+        setWalletEmptyStatus("invalid")
+      }
+    }, 500);
+
+    return () => clearTimeout(timeout);
+  }, [email]);
+
+
+  
 
   const fetchClaims = async () => {
     if (!address) return;
@@ -103,16 +141,52 @@ export function EnsClaim() {
         <p className="text-foreground/80 mb-4">
           Connect your wallet to reserve your subname.
         </p>
-        <div className="flex justify-center">
-          <Button
-            onClick={() => open()}
-            variant="outline"
-            className="rounded-xl px-6 py-5 font-bold shadow-sm hover:bg-primary hover:text-primary-foreground transition-all flex items-center gap-2"
-          >
-            <Wallet className="w-5 h-5" />
-            Connect Wallet
-          </Button>
+
+        <div className="mb-4 text-left">
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Enter your email"
+            className="w-full rounded-xl border border-border bg-background px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+          />
+
+          {emailStatus === "checking" && (
+            <p className="mt-2 text-sm text-foreground/60">
+              Checking email...
+            </p>
+          )}
+
+          {(emailStatus === "valid" && walletEmptyStatus === "valid") && (
+            <p className="mt-2 text-sm text-green-500">
+              Email registered without wallet connected
+            </p>
+          )}
+          {(emailStatus === "valid" && walletEmptyStatus === "invalid") && (
+            <p className="mt-2 text-sm text-red-500">
+              Email registered but wallet already connected
+            </p>
+          )}
+
+
+          {emailStatus === "invalid" && (
+            <p className="mt-2 text-sm text-red-500">
+              Email not registered
+            </p>
+          )}
         </div>
+
+
+        <div className={!canConnect ? "pointer-events-none opacity-50" : ""}>
+          <div className="flex justify-center">
+            <WalletButton />
+          </div>
+        </div>
+        {!canConnect && (
+          <p className="mt-3 text-xs text-foreground/60">
+            Please enter a valid registered email before connecting your wallet.
+          </p>
+        )}
       </div>
     );
   }

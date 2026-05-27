@@ -1,23 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useAccount, useSignMessage } from "wagmi";
+import { useState } from "react";
+import { useWallet } from "@/hooks/use-wallet";
+import { useSignMessage } from "wagmi";
 import { Button } from "@/components/ui/button";
+import { WalletButton } from "@/components/wallet-button";
 
 export default function AdminPage() {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, mounted } = useWallet();
   const { signMessageAsync } = useSignMessage();
   const [authHeader, setAuthHeader] = useState<any>(null);
-  const [mounted, setMounted] = useState(false);
 
   const [claims, setClaims] = useState<any[]>([]);
   const [activeNames, setActiveNames] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const authenticate = async () => {
     if (!address) return;
@@ -137,7 +134,7 @@ export default function AdminPage() {
             Connect owner wallet to access.
           </p>
           <div className="flex justify-center">
-            <appkit-button balance="hide" />
+            <WalletButton />
           </div>
         </div>
       </div>

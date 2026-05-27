@@ -1,1 +1,12 @@
-fly.toml
+.git
+.github
+.next
+node_modules
+npm-debug.log*
+bun-debug.log*
+.env
+.env.*
+!.env.example
+Dockerfile
+README.md
+tsconfig.tsbuildinfo
