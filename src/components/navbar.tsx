@@ -192,9 +192,9 @@ export function Navbar() {
               </Link>
             )}
 
-            <div className="pt-3 px-3" onClickCapture={() => setMobileOpen(false)}>
-              <WalletButton />
-            </div>
+           <div className="[&_button]:!bg-transparent [&_button]:!border-0 [&_button]:!text-nav-text [&_button]:hover:!bg-white/10 [&_button]:!px-3 [&_button]:!py-2.5 [&_button]:!h-auto [&_button]:!text-base [&_button]:!font-semibold [&_button]:!rounded-lg [&_button]:!justify-start [&_button]:!w-full">
+            <WalletButton />
+          </div>
           </div>
         </div>
       )}
