@@ -5,6 +5,7 @@
 @theme {
 /* this is for the color when toggle_theme this is for the light theme*/
   --color-web3: rgba(63, 101, 226);
+  --color-form: rgba(163, 222, 244);
   --color-uoa: rgba(255, 255, 255);
   --color-hero-text: rgba(0, 0, 0);
   --color-nav-text: rgba(0, 0, 0);
@@ -96,6 +97,7 @@
   --color-nav-bar-text: rgba(255, 255, 255);
   --color-nav-text-hover: rgba(163, 222, 244);
   --color-web3: rgba(163, 222, 244);
+  --color-form: rgba(146, 171, 255);
   --color-uoa: rgba(0,0,0);
   --color-hero-text: rgba(255, 255, 255); 
   --color-button: rgba(63,101,226,0.6);

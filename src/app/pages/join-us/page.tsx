@@ -2,34 +2,34 @@ import { RegistrationForm } from "../../../components/registration-form";
 
 export default function JoinUs() {
   return (
-    <section
-      id="join-us"
-      className="py-24 md:py-32 bg-background border-t border-border/50"
-    >
-      <div className="container mx-auto px-4">
-        {/* Section header */}
-        <div className=" space-y-4 max-w-2xl mx-auto text-center">
-          <span className="text-sm font-bold uppercase tracking-[0.2em] text-primary">
-            / Join Us
-          </span>
-          <h2 className="text-4xl md:text-5xl font-black tracking-tight text-foreground">
-            Join our Web3 Club
-          </h2>
-          <p className="text-lg text-muted-foreground leading-relaxed">
-            A student-led club at the University of Auckland for anyone
-            interested in blockchain, AI, and the wider Web3 space. Sign up to
-            learn, connect, and stay updated on events.
-            <br />
-            <br />
-            Bitcoin runs on Proof of Work. We run on Proof of Learn ✅
-          </p>
+    <main>
+      <section
+        id="join-us"
+        className="min-h-screen bg-gradient-to-r pt-28 px-4"
+      >
+        <div className="max-w-6xl mx-auto bg-nav-bg rounded-[48px] p-8 md:p-16 shadow-xl mt-20 mb-20">
+          <div className="mx-auto max-w-[1320px] px-2 sm:px-4">
+            {/* Section header */}
+            <div className="max-w-3xl mb-14">
+              <h2 className="text-5xl md:text-6xl font-black leading-tight mb-4 text-hero-text">
+                Join Web3
+              </h2>
+    
+              <p className="text-xl font-medium text-black text-hero-text">
+                A student-led club at the University of Auckland for anyone
+                interested in blockchain, AI, and the wider Web3 space.
+                <br />
+                Sign up to learn, connect and stay updated on events.
+              </p>
+            </div>
+            
+            {/* Sign up grid */}
+            <div className="mx-auto w-full pb-20">
+              <RegistrationForm />
+            </div>
+          </div>
         </div>
-
-        {/* Sign up grid */}
-        <div className="max-w-2xl mx-auto w-full">
-          <RegistrationForm />
-        </div>
-      </div>
-    </section>
+      </section>
+    </main>
   );
 }

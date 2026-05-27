@@ -1,9 +1,6 @@
 // Mock UI components for temporary use
 import { UseFormRegisterReturn, FieldError } from "react-hook-form";
 
-const baseInputClass =
-  "w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all";
-
 interface FormInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   /**
    * Props provided by `react-hook-form`'s `register` function.
@@ -21,6 +18,10 @@ interface FormInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
    */
   numericOnly?: boolean;
 }
+
+const inputClass = `w-full min-w-0 rounded-xl px-5 sm:px-8 py-5 
+  bg-white/60 focus:bg-white/90 transition-colors
+  md:text-[1.5rem] text-[1rem] leading-none shadow-xl outline-none`;
 
 /**
  * A styled input component integrated with `react-hook-form`.
@@ -45,14 +46,16 @@ export function FormInput({
   };
 
   return (
-    <div>
+    <div className="flex flex-col flex-1 w-full max-w-[680px]">
       <input
-        className={baseInputClass}
+        className={inputClass}
         {...props}
         {...registerProps}
         onChange={handleChange}
       />
-      {error && <p className="text-red-500 text-sm mt-1">{error.message}</p>}
+      {error && (
+        <p className="text-red-500 text-sm ml-2 mt-1">{error.message}</p>
+      )}
     </div>
   );
 }
@@ -87,8 +90,12 @@ export function FormSelect({
   ...props
 }: FormSelectProps) {
   return (
-    <div>
-      <select className={baseInputClass} {...props} {...registerProps}>
+    <div className="w-full max-w-[680px] flex flex-col">
+      <select
+        className={inputClass + " cursor-pointer"}
+        {...props}
+        {...registerProps}
+      >
         {children}
       </select>
       {error && <p className="text-red-500 text-sm mt-1">{error.message}</p>}
