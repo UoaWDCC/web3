@@ -28,8 +28,9 @@ export async function POST(req: NextRequest) {
   const isAuth = await verifyAdminAuth(req);
   if (!isAuth)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const prisma = getPrisma();
+  
   try {
+    const prisma = getPrisma();
     const { claimId } = await req.json();
 
     const claim = await prisma.claimRequest.findUnique({

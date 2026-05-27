@@ -9,9 +9,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Address is required" }, { status: 400 });
   }
 
-  const prisma = getPrisma();
 
   try {
+    const prisma = getPrisma();
     const claims = await prisma.claimRequest.findMany({
       where: {
         walletAddress: address.toLowerCase(),
@@ -32,9 +32,8 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
 
-  const prisma = getPrisma();
-  
   try {
+    const prisma = getPrisma();
     const body = await req.json();
     const { walletAddress, requestedName } = body;
     const normalizedWalletAddress = walletAddress?.toLowerCase();

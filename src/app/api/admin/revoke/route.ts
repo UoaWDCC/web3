@@ -29,9 +29,10 @@ export async function POST(req: NextRequest) {
   if (!isAuth)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const prisma = getPrisma();
+  
   
   try {
+    const prisma = getPrisma();
     const { name, claimId } = await req.json();
 
     // Delete from NameStone
