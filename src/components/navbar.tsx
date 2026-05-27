@@ -19,7 +19,8 @@ const navLinks = [
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [theme, setTheme] = useState("light");
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [themeReady, setThemeReady] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { address } = useAccount();
 
@@ -36,9 +37,12 @@ export function Navbar() {
       : "light";
 
     setTheme(saved || preferred);
+    setThemeReady(true);
   }, []);
 
   useEffect(() => {
+    if (!themeReady) return;
+
     document.documentElement.classList.add("theme-transitioning");
 
     if (theme === "dark") {
@@ -54,7 +58,7 @@ export function Navbar() {
     }, 300);
 
     return () => clearTimeout(timeout);
-  }, [theme]);
+  }, [theme, themeReady]);
 
   const isAdmin = mounted && isAllowedAdminAddress(address);
 
