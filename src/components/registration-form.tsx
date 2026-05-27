@@ -108,45 +108,38 @@ export function RegistrationForm() {
     alert("Form submitted successfully!");
   };
 
-  // Storing the shared styles in a variable keeps the JSX clean!
-  // Storing the shared styles in a variable keeps the JSX clean!
-  const inputClass =
-    "w-full max-w-[620px] rounded-xl px-8 py-5 bg-white/60 focus:bg-white/90 text-[2rem] leading-none text-black shadow-xl outline-none transition-colors";
-
   return (
     <div className="w-full">
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="mx-auto flex w-full flex-col items-center gap-5 rounded-[36px] bg-form p-8 md:p-12 shadow-xl/20"
+        className="mx-auto w-full flex flex-col items-center gap-5 rounded-[36px] bg-form p-8 md:p-12 shadow-xl/20"
         // className="mx-auto flex w-full flex-col items-center gap-5 rounded-[36px] bg-[#90A6FF] p-8 md:p-12 shadow-xl/20"
         noValidate
       >
-        <h2 className="mb-3 text-center text-4xl font-bold text-slate-900">
+        <h2 className="text-4xl md:text-5xl font-black leading-tight mb-4 text-hero-text">
           Join Our Team
         </h2>
 
         <FormInput
-          className={inputClass}
           placeholder="First Name"
           error={errors.first_name}
           registerProps={register("first_name")}
         />
+
         <FormInput
-          className={inputClass}
           placeholder="Last Name"
           error={errors.last_name}
           registerProps={register("last_name")}
         />
+
         <FormInput
           type="email"
-          className={inputClass}
           placeholder="Email"
           error={errors.email}
           registerProps={register("email")}
         />
 
         <FormSelect
-          className={inputClass}
           defaultValue=""
           error={errors.university}
           registerProps={register("university")}
@@ -161,52 +154,42 @@ export function RegistrationForm() {
         </FormSelect>
 
         {selectedUniversity && selectedUniversity !== UniversityType.None && (
-          <div className="flex flex-col gap-4">
+          <>
             {selectedUniversity &&
               selectedUniversity !== UniversityType.Other && (
-                <div className="flex flex-row gap-4">
+                <div className="flex gap-3 w-full max-w-[680px]">
                   {selectedUniversity &&
                     selectedUniversity !== UniversityType.AUT && (
-                      <div className="flex-1">
-                        <FormInput
-                          className={inputClass}
-                          placeholder="UPI"
-                          error={errors.upi}
-                          registerProps={register("upi")}
-                        />
-                      </div>
+                      <FormInput
+                        placeholder="UPI"
+                        error={errors.upi}
+                        registerProps={register("upi")}
+                      />
                     )}
 
-                  <div className="flex-1">
-                    <FormInput
-                      type="text"
-                      className={inputClass}
-                      numericOnly={true}
-                      placeholder="Student ID"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      error={errors.student_id}
-                      registerProps={register("student_id")}
-                    />
-                  </div>
+                  <FormInput
+                    type="text"
+                    numericOnly={true}
+                    placeholder="Student ID"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    error={errors.student_id}
+                    registerProps={register("student_id")}
+                  />
                 </div>
               )}
 
             {selectedUniversity &&
               selectedUniversity === UniversityType.Other && (
-                <div className="flex-1">
                   <FormInput
                     type="text"
-                    className={inputClass}
                     placeholder="Other University"
                     error={errors.university_other}
                     registerProps={register("university_other")}
                   />
-                </div>
               )}
 
             <FormSelect
-              className={inputClass}
               defaultValue=""
               error={errors.degree_type}
               registerProps={register("degree_type", {
@@ -228,7 +211,6 @@ export function RegistrationForm() {
             </FormSelect>
 
             <FormSelect
-              className={inputClass}
               defaultValue=""
               error={errors.faculty}
               registerProps={register("faculty", {
@@ -244,11 +226,13 @@ export function RegistrationForm() {
               <option value={FacultyType.Commerce}>Commerce</option>
               <option value={FacultyType.Other}>Other</option>
             </FormSelect>
-          </div>
+          </>
         )}
 
         <textarea
-          className={inputClass}
+          className="w-full max-w-[680px] rounded-xl px-8 py-5 
+            bg-white/60 focus:bg-white/90 transition-colors
+            md:text-[1.5rem] text-[1rem] leading-none shadow-xl outline-none"
           placeholder="Goal Statement"
           {...register("goal_statement")}
         />
@@ -256,9 +240,9 @@ export function RegistrationForm() {
         <button
           type="submit"
           className="mt-4 mx-auto w-54 rounded-xl px-4 py-2.5 text-2xl 
-            bg-white dark:bg-[rgba(64,66,70)] text-button-txt dark:text-white 
+            bg-white dark:bg-[rgba(64,66,70,0.8)] text-button-txt dark:text-white 
             transition-colors hover:bg-button-txt hover:text-button dark:hover:bg-white/80 dark:hover:text-[rgba(64,66,70)]
-            border-1 border-button-bor font-bold shadow-sm"
+            border-1 border-button-bor dark:border-white font-bold shadow-sm"
         >
           Submit
         </button>

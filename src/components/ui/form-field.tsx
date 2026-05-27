@@ -19,6 +19,10 @@ interface FormInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   numericOnly?: boolean;
 }
 
+const inputClass = `w-full min-w-0 rounded-xl px-8 py-5 
+  bg-white/60 focus:bg-white/90 transition-colors
+  md:text-[1.5rem] text-[1rem] leading-none shadow-xl outline-none`;
+
 /**
  * A styled input component integrated with `react-hook-form`.
  * It provides basic styling, error display, and optional numeric-only input filtering.
@@ -42,9 +46,9 @@ export function FormInput({
   };
 
   return (
-    <div className="w-full flex justify-center">
-      <input {...props} {...registerProps} onChange={handleChange} />
-      {error && <p className="text-red-500 text-sm mt-1">{error.message}</p>}
+    <div className="flex flex-col flex-1 w-full max-w-[680px]">
+      <input className={inputClass} {...props} {...registerProps} onChange={handleChange} />
+      {error && <p className="text-red-500 text-sm ml-2 mt-1">{error.message}</p>}
     </div>
   );
 }
@@ -79,8 +83,8 @@ export function FormSelect({
   ...props
 }: FormSelectProps) {
   return (
-    <div className="w-full flex justify-center">
-      <select {...props} {...registerProps}>
+    <div className="w-full max-w-[680px] flex flex-col">
+      <select className={inputClass} {...props} {...registerProps}>
         {children}
       </select>
       {error && <p className="text-red-500 text-sm mt-1">{error.message}</p>}
