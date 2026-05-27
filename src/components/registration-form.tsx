@@ -135,7 +135,7 @@ export function RegistrationForm() {
           className="mx-auto w-full flex flex-col items-center gap-5"
           noValidate
         >
-          <h2 className="text-4xl md:text-5xl font-extrabold leading-tight mb-4 text-hero-text">
+          <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold leading-tight mb-4 text-hero-text">
             Join Our Team
           </h2>
 
@@ -249,7 +249,7 @@ export function RegistrationForm() {
           )}
 
           <textarea
-            className="w-full max-w-[680px] rounded-xl px-8 py-5 
+            className="w-full max-w-[680px] rounded-xl px-5 sm:px-8 py-5 
             bg-white/60 focus:bg-white/90 transition-colors
             md:text-[1.5rem] text-[1rem] leading-none shadow-xl outline-none"
             placeholder="Goal Statement"
@@ -258,7 +258,7 @@ export function RegistrationForm() {
 
           <button
             type="submit"
-            className="mt-4 mx-auto w-54 rounded-xl px-4 py-2.5 text-2xl font-bold shadow-sm cursor-pointer 
+            className="mt-4 mx-auto w-full sm:w-54 rounded-xl px-4 py-2.5 text-2xl font-bold shadow-sm cursor-pointer 
             bg-white text-button-txt transition-colors hover:bg-button-txt hover:text-white
             border-2 border-button-txt"
           >

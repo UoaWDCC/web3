@@ -19,7 +19,7 @@ interface FormInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   numericOnly?: boolean;
 }
 
-const inputClass = `w-full min-w-0 rounded-xl px-8 py-5 
+const inputClass = `w-full min-w-0 rounded-xl px-5 sm:px-8 py-5 
   bg-white/60 focus:bg-white/90 transition-colors
   md:text-[1.5rem] text-[1rem] leading-none shadow-xl outline-none`;
 
