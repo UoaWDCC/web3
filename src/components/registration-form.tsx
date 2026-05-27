@@ -11,6 +11,7 @@ import {
   DegreeType,
   FacultyType,
 } from "../lib/schemas/registration";
+import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormInput, FormSelect } from "./ui/form-field";
 import { RegistrationService } from "../services/registrations/registrations-service";
@@ -38,6 +39,7 @@ export function RegistrationForm() {
   });
 
   const selectedUniversity = watch("university");
+  const [finishedForm, setFinishedForm] = useState(false);
 
   useEffect(() => {
     const clearField = (
@@ -105,148 +107,161 @@ export function RegistrationForm() {
     await RegistrationService.submitRegistration(data);
 
     reset();
-    alert("Form submitted successfully!");
+    setFinishedForm(true);
   };
 
   return (
-    <div className="w-full">
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="mx-auto w-full flex flex-col items-center gap-5 rounded-[36px] bg-form p-8 md:p-12 shadow-xl/20"
-        // className="mx-auto flex w-full flex-col items-center gap-5 rounded-[36px] bg-[#90A6FF] p-8 md:p-12 shadow-xl/20"
-        noValidate
-      >
-        <h2 className="text-4xl md:text-5xl font-black leading-tight mb-4 text-hero-text">
-          Join Our Team
-        </h2>
-
-        <FormInput
-          placeholder="First Name"
-          error={errors.first_name}
-          registerProps={register("first_name")}
-        />
-
-        <FormInput
-          placeholder="Last Name"
-          error={errors.last_name}
-          registerProps={register("last_name")}
-        />
-
-        <FormInput
-          type="email"
-          placeholder="Email"
-          error={errors.email}
-          registerProps={register("email")}
-        />
-
-        <FormSelect
-          defaultValue=""
-          error={errors.university}
-          registerProps={register("university")}
+    <div className="mx-auto w-full rounded-[36px] bg-form p-8 md:p-12 shadow-xl/20">
+      {finishedForm && (
+        <div className="flex flex-col items-center gap-4 p-12 md:gap-8 md:p-36">
+          <img
+            src="/logo/confirm_icon.svg"
+            alt="Confirmation Icon"
+            width="200px"
+            height="200px"
+          />
+          <p className="text-white text-xl md:text-3xl font-bold text-center">
+            Welcome, you've joined Web3!
+          </p>
+        </div>
+      )}
+      {!finishedForm && (
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="mx-auto w-full flex flex-col items-center gap-5"
+          noValidate
         >
-          <option value="" disabled>
-            Select University
-          </option>
-          <option value={UniversityType.UOA}>UOA</option>
-          <option value={UniversityType.AUT}>AUT</option>
-          <option value={UniversityType.Other}>Other</option>
-          <option value={UniversityType.None}>None</option>
-        </FormSelect>
+          <h2 className="text-4xl md:text-5xl font-extrabold leading-tight mb-4 text-hero-text">
+            Join Our Team
+          </h2>
 
-        {selectedUniversity && selectedUniversity !== UniversityType.None && (
-          <>
-            {selectedUniversity &&
-              selectedUniversity !== UniversityType.Other && (
-                <div className="flex gap-3 w-full max-w-[680px]">
-                  {selectedUniversity &&
-                    selectedUniversity !== UniversityType.AUT && (
-                      <FormInput
-                        placeholder="UPI"
-                        error={errors.upi}
-                        registerProps={register("upi")}
-                      />
-                    )}
+          <FormInput
+            placeholder="First Name"
+            error={errors.first_name}
+            registerProps={register("first_name")}
+          />
 
-                  <FormInput
-                    type="text"
-                    numericOnly={true}
-                    placeholder="Student ID"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    error={errors.student_id}
-                    registerProps={register("student_id")}
-                  />
-                </div>
-              )}
+          <FormInput
+            placeholder="Last Name"
+            error={errors.last_name}
+            registerProps={register("last_name")}
+          />
 
-            {selectedUniversity &&
-              selectedUniversity === UniversityType.Other && (
+          <FormInput
+            type="email"
+            placeholder="Email"
+            error={errors.email}
+            registerProps={register("email")}
+          />
+
+          <FormSelect
+            defaultValue=""
+            error={errors.university}
+            registerProps={register("university")}
+          >
+            <option value="" disabled>
+              Select University
+            </option>
+            <option value={UniversityType.UOA}>UOA</option>
+            <option value={UniversityType.AUT}>AUT</option>
+            <option value={UniversityType.Other}>Other</option>
+            <option value={UniversityType.None}>None</option>
+          </FormSelect>
+
+          {selectedUniversity && selectedUniversity !== UniversityType.None && (
+            <>
+              {selectedUniversity &&
+                selectedUniversity !== UniversityType.Other && (
+                  <div className="flex gap-3 w-full max-w-[680px]">
+                    {selectedUniversity &&
+                      selectedUniversity !== UniversityType.AUT && (
+                        <FormInput
+                          placeholder="UPI"
+                          error={errors.upi}
+                          registerProps={register("upi")}
+                        />
+                      )}
+
+                    <FormInput
+                      type="text"
+                      numericOnly={true}
+                      placeholder="Student ID"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      error={errors.student_id}
+                      registerProps={register("student_id")}
+                    />
+                  </div>
+                )}
+
+              {selectedUniversity &&
+                selectedUniversity === UniversityType.Other && (
                   <FormInput
                     type="text"
                     placeholder="Other University"
                     error={errors.university_other}
                     registerProps={register("university_other")}
                   />
-              )}
+                )}
 
-            <FormSelect
-              defaultValue=""
-              error={errors.degree_type}
-              registerProps={register("degree_type", {
-                setValueAs: (value) => (value === "" ? null : value),
-              })}
-            >
-              <option value="" disabled>
-                Select Degree Type
-              </option>
-              <option value={DegreeType.FirstYear}>First Year</option>
-              <option value={DegreeType.SecondYear}>Second Year</option>
-              <option value={DegreeType.ThirdYear}>Third Year</option>
-              <option value={DegreeType.FourthYear}>Fourth Year</option>
-              <option value={DegreeType.FourthYearAndBeyond}>
-                Fourth Year and Beyond
-              </option>
-              <option value={DegreeType.Masters}>Masters</option>
-              <option value={DegreeType.PhD}>PhD</option>
-            </FormSelect>
+              <FormSelect
+                defaultValue=""
+                error={errors.degree_type}
+                registerProps={register("degree_type", {
+                  setValueAs: (value) => (value === "" ? null : value),
+                })}
+              >
+                <option value="" disabled>
+                  Select Degree Type
+                </option>
+                <option value={DegreeType.FirstYear}>First Year</option>
+                <option value={DegreeType.SecondYear}>Second Year</option>
+                <option value={DegreeType.ThirdYear}>Third Year</option>
+                <option value={DegreeType.FourthYear}>Fourth Year</option>
+                <option value={DegreeType.FourthYearAndBeyond}>
+                  Fourth Year and Beyond
+                </option>
+                <option value={DegreeType.Masters}>Masters</option>
+                <option value={DegreeType.PhD}>PhD</option>
+              </FormSelect>
 
-            <FormSelect
-              defaultValue=""
-              error={errors.faculty}
-              registerProps={register("faculty", {
-                setValueAs: (value) => (value === "" ? null : value),
-              })}
-            >
-              <option value="" disabled>
-                Select Faculty
-              </option>
-              <option value={FacultyType.Science}>Science</option>
-              <option value={FacultyType.Arts}>Arts</option>
-              <option value={FacultyType.Engineering}>Engineering</option>
-              <option value={FacultyType.Commerce}>Commerce</option>
-              <option value={FacultyType.Other}>Other</option>
-            </FormSelect>
-          </>
-        )}
+              <FormSelect
+                defaultValue=""
+                error={errors.faculty}
+                registerProps={register("faculty", {
+                  setValueAs: (value) => (value === "" ? null : value),
+                })}
+              >
+                <option value="" disabled>
+                  Select Faculty
+                </option>
+                <option value={FacultyType.Science}>Science</option>
+                <option value={FacultyType.Arts}>Arts</option>
+                <option value={FacultyType.Engineering}>Engineering</option>
+                <option value={FacultyType.Commerce}>Commerce</option>
+                <option value={FacultyType.Other}>Other</option>
+              </FormSelect>
+            </>
+          )}
 
-        <textarea
-          className="w-full max-w-[680px] rounded-xl px-8 py-5 
+          <textarea
+            className="w-full max-w-[680px] rounded-xl px-8 py-5 
             bg-white/60 focus:bg-white/90 transition-colors
             md:text-[1.5rem] text-[1rem] leading-none shadow-xl outline-none"
-          placeholder="Goal Statement"
-          {...register("goal_statement")}
-        />
+            placeholder="Goal Statement"
+            {...register("goal_statement")}
+          />
 
-        <button
-          type="submit"
-          className="mt-4 mx-auto w-54 rounded-xl px-4 py-2.5 text-2xl 
-            bg-white dark:bg-[rgba(64,66,70,0.8)] text-button-txt dark:text-white 
-            transition-colors hover:bg-button-txt hover:text-button dark:hover:bg-white/80 dark:hover:text-[rgba(64,66,70)]
-            border-1 border-button-bor dark:border-white font-bold shadow-sm"
-        >
-          Submit
-        </button>
-      </form>
+          <button
+            type="submit"
+            className="mt-4 mx-auto w-54 rounded-xl px-4 py-2.5 text-2xl font-bold shadow-sm cursor-pointer 
+            bg-white text-button-txt transition-colors hover:bg-button-txt hover:text-white
+            border-2 border-button-txt"
+          >
+            Submit
+          </button>
+        </form>
+      )}
     </div>
   );
 }

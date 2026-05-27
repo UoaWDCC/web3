@@ -47,8 +47,15 @@ export function FormInput({
 
   return (
     <div className="flex flex-col flex-1 w-full max-w-[680px]">
-      <input className={inputClass} {...props} {...registerProps} onChange={handleChange} />
-      {error && <p className="text-red-500 text-sm ml-2 mt-1">{error.message}</p>}
+      <input
+        className={inputClass}
+        {...props}
+        {...registerProps}
+        onChange={handleChange}
+      />
+      {error && (
+        <p className="text-red-500 text-sm ml-2 mt-1">{error.message}</p>
+      )}
     </div>
   );
 }
@@ -84,7 +91,11 @@ export function FormSelect({
 }: FormSelectProps) {
   return (
     <div className="w-full max-w-[680px] flex flex-col">
-      <select className={inputClass} {...props} {...registerProps}>
+      <select
+        className={inputClass + " cursor-pointer"}
+        {...props}
+        {...registerProps}
+      >
         {children}
       </select>
       {error && <p className="text-red-500 text-sm mt-1">{error.message}</p>}
