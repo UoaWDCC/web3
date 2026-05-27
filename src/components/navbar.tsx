@@ -79,7 +79,7 @@ export function Navbar() {
       left-1/2 -translate-x-1/2 top-[3%] sm:top-[5%]
       rounded-full text-nav-text shadow-lg"
     >
-      <div className="px-6 h-16 grid grid-cols-3 items-center w-full">
+      <div className="px-6 h-16 grid grid-cols-[1fr_2fr_1fr] items-center w-full">
         {/* Logo */}
         <div className="flex items-center justify-start">
         <Link href="/" className="flex items-center gap-2 group shrink-0 min-w-0">
@@ -89,14 +89,14 @@ export function Navbar() {
             className="w-8 h-8 sm:w-10 sm:h-10 transition-transform duration-500 group-hover:scale-110 drop-shadow-sm shrink-0"
           />
 
-          <span className="hidden sm:inline text-nav-text text-lg sm:text-xl font-black tracking-tight font-russo whitespace-nowrap">
+          <span className="text-nav-text text-lg sm:text-xl font-black tracking-tight font-russo whitespace-nowrap">
             WEB3UOA
           </span>
         </Link>
         </div>
         
         {/* Desktop links */}
-        <div className="hidden lg:flex items-center justify-center gap-4 lg:gap-8 xl:gap-20 2xl:gap-35">
+        <div className="hidden lg:flex items-center justify-center gap-4 lg:gap-6 xl:gap-16 2xl:gap-35">
           {navLinks.map((link) => (
             <Link
               key={link.href}
