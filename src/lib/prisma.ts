@@ -43,9 +43,6 @@ declare global {
  * until you call it inside a request handler.
  */
 export const getPrisma = (): PrismaClient => {
-  if (process.env.NODE_ENV !== "production") {
-    globalThis.prismaGlobal ??= createPrismaClient();
+      globalThis.prismaGlobal ??= createPrismaClient();
     return globalThis.prismaGlobal;
-  }
-  return createPrismaClient();
 };
