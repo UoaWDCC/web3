@@ -23,8 +23,7 @@ export function Hero() {
                 asChild
               >
                 <a
-                  href="https://forms.gle/vzRb7t46SPBUwi7v8"
-                  target="_blank"
+                  href="/pages/join-us"
                   rel="noopener noreferrer"
                 >
                   Join the Club
@@ -35,7 +34,7 @@ export function Hero() {
                 className="text-base px-8 h-14 border-2 transition-all rounded-xl font-bold !bg-nav-bg !border-button-bor !text-button-bor hover:!bg-button-bor hover:!text-white hover:!border-button-bor"
                 asChild
               >
-                <a href="#about">Learn More</a>
+                <a href="/pages/about/">Learn More</a>
               </Button>
             </div>
 
