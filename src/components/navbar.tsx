@@ -13,14 +13,9 @@ const navLinks = [
   { label: "About", href: "/pages/about" },
   { label: "Events", href: "/pages/events" },
   { label: "Partners", href: "/pages/partners" },
-  // { label: "Claim your Web3 ID!", href: "/pages/claim-id", isCTA: true },
-  // { label: "About", href: "#about" },
-  // { label: "Events", href: "#events" },
-  // { label: "Partners", href: "#partners" },
-  { label: "Search", href: "#search" }, // TODO: add search page
-  { label: "Join Us", href: "#join_us" }, // TODO: add Us
-  { label: "Connect Wallet", href: "/pages/claim-id" }, // TODO: add wallet connection
-  //{ label: "Claim your Web3 ID!", href: "#identity", isCTA: true }  // not sure if need 
+  { label: "Search", href: "#search" },
+  { label: "Join Us", href: "#join_us" },
+  { label: "Claim ID", href: "/pages/claim-id" }
 ];
 
 export function Navbar() {
