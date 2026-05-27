@@ -6,6 +6,7 @@ import { useSignMessage } from "wagmi";
 import { Button } from "@/components/ui/button";
 import { WalletButton } from "@/components/wallet-button";
 
+export const dynamic = "force-dynamic";
 export default function AdminPage() {
   const { address, isConnected, mounted } = useWallet();
   const { signMessageAsync } = useSignMessage();

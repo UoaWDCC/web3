@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { deleteName } from "@/lib/namestone";
 import { verifyMessage } from "viem";
 import { isAllowedAdminAddress } from "@/lib/admin-auth";
@@ -29,7 +29,10 @@ export async function POST(req: NextRequest) {
   if (!isAuth)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  
+  
   try {
+    const prisma = getPrisma();
     const { name, claimId } = await req.json();
 
     // Delete from NameStone
