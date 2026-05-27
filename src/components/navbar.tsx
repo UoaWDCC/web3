@@ -79,8 +79,9 @@ export function Navbar() {
       left-1/2 -translate-x-1/2 top-[3%] sm:top-[5%]
       rounded-full text-nav-text shadow-lg"
     >
-      <div className="h-14 sm:h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 gap-4">
+      <div className="px-6 h-16 grid grid-cols-3 items-center w-full">
         {/* Logo */}
+        <div className="flex items-center justify-start">
         <Link href="/" className="flex items-center gap-2 group shrink-0 min-w-0">
           <img
             src="/logo/web3uoa_logo.png"
@@ -92,9 +93,10 @@ export function Navbar() {
             WEB3UOA
           </span>
         </Link>
-
+        </div>
+        
         {/* Desktop links */}
-        <div className="hidden xl:flex items-center gap-10 2xl:gap-16 min-w-0 ml-auto">
+        <div className="hidden lg:flex items-center justify-center gap-4 lg:gap-8 xl:gap-20 2xl:gap-35">
           {navLinks.map((link) => (
             <Link
               key={link.href}
@@ -118,31 +120,18 @@ export function Navbar() {
             </Link>
           )}
 
-          <div className="flex items-center shrink-0">
+          {/* <div className="flex items-center shrink-0">
             <WalletButton />
-          </div>
+          </div> */}
 
-          {/* Theme toggle button */}
-          <Button
-            size="sm"
-            onClick={toggleTheme}
-            className="text-text bg-transparent hover:bg-transparent active:bg-transparent focus-visible:ring-0 shrink-0 hover:cursor-pointer"
-          >
-            <span className="relative h-6 w-6 block">
-              <Sun
-                className="absolute inset-0 size-6 transition-opacity duration-300"
-                style={{ opacity: theme === "light" ? 1 : 0 }}
-              />
-              <Moon
-                className="absolute inset-0 size-6 transition-opacity duration-300"
-                style={{ opacity: theme === "light" ? 0 : 1 }}
-              />
-            </span>
-          </Button>
+
         </div>
 
         {/* Mobile controls */}
-        <div className="xl:hidden flex items-center gap-2 shrink-0">
+        <div className="flex items-center justify-end gap-4 col-start-3">
+          <div className="hidden lg:flex items-center gap-4">
+          <WalletButton />
+          </div>
           <Button
             size="sm"
             onClick={toggleTheme}
@@ -162,7 +151,7 @@ export function Navbar() {
 
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="p-2 rounded-lg text-nav-text transition-colors hover:bg-white/10"
+            className="lg:hidden p-2 rounded-lg text-nav-text transition-colors hover:bg-white/10"
             aria-label="Toggle menu"
           >
             {mobileOpen ? (
@@ -176,7 +165,7 @@ export function Navbar() {
 
       {/* Mobile dropdown */}
       {mobileOpen && (
-        <div className="xl:hidden absolute top-full left-0 right-0 mt-2 bg-nav-bg backdrop-blur-md border border-white/10 shadow-lg rounded-2xl overflow-hidden">
+        <div className="lg:hidden absolute top-full left-0 right-0 mt-2 bg-nav-bg backdrop-blur-md border border-white/10 shadow-lg rounded-2xl overflow-hidden">
           <div className="px-6 py-5 flex flex-col gap-1">
             {navLinks.map((link) => (
               <Link
