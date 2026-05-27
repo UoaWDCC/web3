@@ -11,6 +11,7 @@ import {
   DegreeType,
   FacultyType,
 } from "../lib/schemas/registration";
+import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormInput, FormSelect } from "./ui/form-field";
 import { RegistrationService } from "../services/registrations/registrations-service";
@@ -33,11 +34,13 @@ export function RegistrationForm() {
     watch,
     setValue,
     clearErrors,
+    setError
   } = useForm<RegistrationData>({
     resolver: zodResolver(RegistrationSchema),
   });
 
   const selectedUniversity = watch("university");
+  const [finishedForm, setFinishedForm] = useState(false);
 
   useEffect(() => {
     const clearField = (
@@ -98,87 +101,93 @@ export function RegistrationForm() {
 
     const emailTaken = await RegistrationService.isEmailTaken(data.email);
     if (emailTaken) {
-      alert("Email is already taken");
+      setError("email", {
+        type: "custom",
+        message: "This email is already registered"
+      })
       return;
     }
 
     await RegistrationService.submitRegistration(data);
 
     reset();
-    alert("Form submitted successfully!");
+    setFinishedForm(true);
   };
 
-  // Storing the shared styles in a variable keeps the JSX clean!
-  const inputClass =
-    "w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all";
-
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="w-full max-w-lg bg-white p-8 rounded-xl shadow-xl/20 flex flex-col gap-4"
-        noValidate
-      >
-        <h2 className="text-2xl font-bold text-gray-800 mb-2 text-center">
-          Join Our Team
-        </h2>
-
-        <FormInput
-          className={inputClass}
-          placeholder="First Name"
-          error={errors.first_name}
-          registerProps={register("first_name")}
-        />
-        <FormInput
-          className={inputClass}
-          placeholder="Last Name"
-          error={errors.last_name}
-          registerProps={register("last_name")}
-        />
-        <FormInput
-          type="email"
-          className={inputClass}
-          placeholder="Email"
-          error={errors.email}
-          registerProps={register("email")}
-        />
-
-        <FormSelect
-          className={inputClass}
-          defaultValue=""
-          error={errors.university}
-          registerProps={register("university")}
+    <div className="mx-auto w-full rounded-[36px] bg-form p-8 md:p-12 shadow-xl/20">
+      {finishedForm && (
+        <div className="flex flex-col items-center gap-4 p-12 md:gap-8 md:p-36">
+          <img
+            src="/logo/confirm_icon.svg"
+            alt="Confirmation Icon"
+            width="200px"
+            height="200px"
+          />
+          <p className="text-white text-xl md:text-3xl font-bold text-center">
+            Welcome, you've joined Web3!
+          </p>
+        </div>
+      )}
+      {!finishedForm && (
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="mx-auto w-full flex flex-col items-center gap-5"
+          noValidate
         >
-          <option value="" disabled>
-            Select University
-          </option>
-          <option value={UniversityType.UOA}>UOA</option>
-          <option value={UniversityType.AUT}>AUT</option>
-          <option value={UniversityType.Other}>Other</option>
-          <option value={UniversityType.None}>None</option>
-        </FormSelect>
+          <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold leading-tight mb-4 text-hero-text">
+            Join Our Team
+          </h2>
 
-        {selectedUniversity && selectedUniversity !== UniversityType.None && (
-          <div className="flex flex-col gap-4">
-            {selectedUniversity &&
-              selectedUniversity !== UniversityType.Other && (
-                <div className="flex flex-row gap-4">
-                  {selectedUniversity &&
-                    selectedUniversity !== UniversityType.AUT && (
-                      <div className="flex-1">
+          <FormInput
+            placeholder="First Name"
+            error={errors.first_name}
+            registerProps={register("first_name")}
+          />
+
+          <FormInput
+            placeholder="Last Name"
+            error={errors.last_name}
+            registerProps={register("last_name")}
+          />
+
+          <FormInput
+            type="email"
+            placeholder="Email"
+            error={errors.email}
+            registerProps={register("email")}
+          />
+
+          <FormSelect
+            defaultValue=""
+            error={errors.university}
+            registerProps={register("university")}
+          >
+            <option value="" disabled>
+              Select University
+            </option>
+            <option value={UniversityType.UOA}>UOA</option>
+            <option value={UniversityType.AUT}>AUT</option>
+            <option value={UniversityType.Other}>Other</option>
+            <option value={UniversityType.None}>None</option>
+          </FormSelect>
+
+          {selectedUniversity && selectedUniversity !== UniversityType.None && (
+            <>
+              {selectedUniversity &&
+                selectedUniversity !== UniversityType.Other && (
+                  <div className="flex gap-3 w-full max-w-[680px]">
+                    {selectedUniversity &&
+                      selectedUniversity !== UniversityType.AUT && (
                         <FormInput
-                          className={inputClass}
                           placeholder="UPI"
                           error={errors.upi}
                           registerProps={register("upi")}
                         />
-                      </div>
-                    )}
+                      )}
 
-                  <div className="flex-1">
                     <FormInput
                       type="text"
-                      className={inputClass}
                       numericOnly={true}
                       placeholder="Student ID"
                       inputMode="numeric"
@@ -187,77 +196,76 @@ export function RegistrationForm() {
                       registerProps={register("student_id")}
                     />
                   </div>
-                </div>
-              )}
+                )}
 
-            {selectedUniversity &&
-              selectedUniversity === UniversityType.Other && (
-                <div className="flex-1">
+              {selectedUniversity &&
+                selectedUniversity === UniversityType.Other && (
                   <FormInput
                     type="text"
-                    className={inputClass}
                     placeholder="Other University"
                     error={errors.university_other}
                     registerProps={register("university_other")}
                   />
-                </div>
-              )}
+                )}
 
-            <FormSelect
-              className={inputClass}
-              defaultValue=""
-              error={errors.degree_type}
-              registerProps={register("degree_type", {
-                setValueAs: (value) => (value === "" ? null : value),
-              })}
-            >
-              <option value="" disabled>
-                Select Degree Type
-              </option>
-              <option value={DegreeType.FirstYear}>First Year</option>
-              <option value={DegreeType.SecondYear}>Second Year</option>
-              <option value={DegreeType.ThirdYear}>Third Year</option>
-              <option value={DegreeType.FourthYear}>Fourth Year</option>
-              <option value={DegreeType.FourthYearAndBeyond}>
-                Fourth Year and Beyond
-              </option>
-              <option value={DegreeType.Masters}>Masters</option>
-              <option value={DegreeType.PhD}>PhD</option>
-            </FormSelect>
+              <FormSelect
+                defaultValue=""
+                error={errors.degree_type}
+                registerProps={register("degree_type", {
+                  setValueAs: (value) => (value === "" ? null : value),
+                })}
+              >
+                <option value="" disabled>
+                  Select Degree Type
+                </option>
+                <option value={DegreeType.FirstYear}>First Year</option>
+                <option value={DegreeType.SecondYear}>Second Year</option>
+                <option value={DegreeType.ThirdYear}>Third Year</option>
+                <option value={DegreeType.FourthYear}>Fourth Year</option>
+                <option value={DegreeType.FourthYearAndBeyond}>
+                  Fourth Year and Beyond
+                </option>
+                <option value={DegreeType.Masters}>Masters</option>
+                <option value={DegreeType.PhD}>PhD</option>
+              </FormSelect>
 
-            <FormSelect
-              className={inputClass}
-              defaultValue=""
-              error={errors.faculty}
-              registerProps={register("faculty", {
-                setValueAs: (value) => (value === "" ? null : value),
-              })}
-            >
-              <option value="" disabled>
-                Select Faculty
-              </option>
-              <option value={FacultyType.Science}>Science</option>
-              <option value={FacultyType.Arts}>Arts</option>
-              <option value={FacultyType.Engineering}>Engineering</option>
-              <option value={FacultyType.Commerce}>Commerce</option>
-              <option value={FacultyType.Other}>Other</option>
-            </FormSelect>
-          </div>
-        )}
+              <FormSelect
+                defaultValue=""
+                error={errors.faculty}
+                registerProps={register("faculty", {
+                  setValueAs: (value) => (value === "" ? null : value),
+                })}
+              >
+                <option value="" disabled>
+                  Select Faculty
+                </option>
+                <option value={FacultyType.Science}>Science</option>
+                <option value={FacultyType.Arts}>Arts</option>
+                <option value={FacultyType.Engineering}>Engineering</option>
+                <option value={FacultyType.Commerce}>Commerce</option>
+                <option value={FacultyType.Other}>Other</option>
+              </FormSelect>
+            </>
+          )}
 
-        <textarea
-          className={inputClass}
-          placeholder="Goal Statement"
-          {...register("goal_statement")}
-        />
+          <textarea
+            className="w-full max-w-[680px] rounded-xl px-5 sm:px-8 py-5 
+            bg-white/60 focus:bg-white/90 transition-colors
+            md:text-[1.5rem] text-[1rem] leading-none shadow-xl outline-none"
+            placeholder="Goal Statement"
+            {...register("goal_statement")}
+          />
 
-        <button
-          type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors mt-4 shadow-sm"
-        >
-          Submit
-        </button>
-      </form>
+          <button
+            type="submit"
+            className="mt-4 mx-auto w-full sm:w-54 rounded-xl px-4 py-2.5 text-2xl font-bold shadow-sm cursor-pointer 
+            bg-white text-button-txt transition-colors hover:bg-button-txt hover:text-white
+            border-2 border-button-txt"
+          >
+            Submit
+          </button>
+        </form>
+      )}
     </div>
   );
 }
