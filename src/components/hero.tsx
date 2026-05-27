@@ -91,7 +91,7 @@ export function Hero() {
               <img
                 src="/logo/web3uoa_logo.png"
                 alt="WEB3UOA Logo Cube"
-                className="w-full h-full object-contain drop-shadow-2xl animate-[float_4s_ease-in-out_infinite] transition-transform duration-500 ease-out group-hover:scale-110 group-hover:rotate-[10deg]"
+                className="w-full h-full object-contain drop-shadow-2xl translate-x-30 animate-[float_4s_ease-in-out_infinite] transition-transform duration-500 ease-out group-hover:scale-110 group-hover:rotate-[10deg]"
                 style={{
                   filter: "drop-shadow(0 25px 25px rgb(0 0 0 / 0.15))",
                 }}
