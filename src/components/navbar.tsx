@@ -145,7 +145,7 @@ export function Navbar() {
             </a>
           </Button>*/}
         </div>
-
+            
         {/* Mobile menu button */}
         <div className="lg:hidden flex items-center gap-2 flex-shrink-0">
           <Button
