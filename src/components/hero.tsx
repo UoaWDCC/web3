@@ -4,11 +4,11 @@ import { Instagram, Linkedin, ArrowRight } from "lucide-react";
 export function Hero() {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden border-b border-border/50">
-      <div className="container relative z-12 px-25 pt-65 pb-10">
+      <div className="container relative z-12 px-6 sm:px-12 lg:px-25 pt-65 pb-10">
         <div className="flex flex-col lg:flex-row items-center justify-between gap-16">
           {/* Hero text (left side) */}
           <div className="flex-1 space-y-8 text-center lg:text-left">
-            <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-[7rem] font-black tracking-tight leading-[1.05]">
+            <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-[7rem] font-black tracking-tight leading-[1.05] whitespace-nowrap">
               <span className="text-web3 font-russo">WEB3 </span>
               <span className="text-uoa font-russo">UOA</span>
             </h1>
@@ -77,7 +77,7 @@ export function Hero() {
           </div>
 
           {/* Logo element (right side) */}
-          <div className="flex-1 flex justify-center lg:justify-end items-center relative">
+          <div className="flex-1 flex justify-center items-center relative">
             {/* The cube effect */}
             <a
               href="#identity"
@@ -90,7 +90,7 @@ export function Hero() {
               <img
                 src="/logo/web3uoa_logo.png"
                 alt="WEB3UOA Logo Cube"
-                className="w-full h-full object-contain drop-shadow-2xl translate-x-30 animate-[float_4s_ease-in-out_infinite] transition-transform duration-500 ease-out group-hover:scale-110 group-hover:rotate-[10deg]"
+                className="w-full h-full object-contain drop-shadow-2xl animate-[float_4s_ease-in-out_infinite] transition-transform duration-500 ease-out group-hover:scale-110 group-hover:rotate-[10deg]"
                 style={{
                   filter: "drop-shadow(0 25px 25px rgb(0 0 0 / 0.15))",
                 }}

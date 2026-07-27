@@ -8,6 +8,11 @@ import { ThemeInitScript } from "@/components/theme-init-script";
 export const metadata: Metadata = {
   title: "WEB3UOA - University of Auckland Web3 Club",
   description: "Educating the next generation of blockchain innovators.",
+  icons: {
+    icon: "/logo/web3uoa_logo.png",
+    shortcut: "/logo/web3uoa_logo.png",
+    apple: "/logo/web3uoa_logo.png",
+  },
 };
 
 export default function RootLayout({
