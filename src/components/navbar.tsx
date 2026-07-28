@@ -1,6 +1,6 @@
 "use client";
 
-import { Sun, Moon, Menu, X } from "lucide-react";
+import { Sun, Moon, Menu, X, Search } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useAccount } from "wagmi";
@@ -17,9 +17,9 @@ const navLinks = [
   // { label: "About", href: "#about" },
   // { label: "Events", href: "#events" },
   // { label: "Partners", href: "#partners" },
-  { label: "Search", href: "#search" }, // TODO: add search page
+  // { label: "Search", href: "#search" }, // TODO: add search page
   { label: "Join Us", href: "/pages/join-us" },
-  { label: "Claim ID", href: "/pages/claim-id" },
+  // { label: "Claim ID", href: "/pages/claim-id" },
   //{ label: "Connect Wallet", href: "/pages/claim-id" }, // TODO: add wallet connection
   //{ label: "Claim your Web3 ID!", href: "#identity", isCTA: true }  // not sure if need 
 ];
@@ -129,6 +129,12 @@ export function Navbar() {
             <WalletButton />
           </div>
 
+            {/* Search button */}
+          <button className="flex items-center gap-2 bg-white/100 hover:bg-white/15 border border-white/20 rounded-full px-4 py-2 transition-colors">
+        <Search className="w-4 h-4 text-nav-text/100" />
+        <span className="text-sm text-nav-text/100 whitespace-nowrap">Search person or wallet ID</span>
+      </button>
+
           {/* Theme toggle button */}
           <Button
             size="sm"
@@ -146,6 +152,8 @@ export function Navbar() {
               />
             </span>
           </Button>
+          
+
         </div>
 
         {/* Mobile controls */}
