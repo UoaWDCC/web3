@@ -31,7 +31,7 @@ export default function ClaimIdPage() {
     <main className="min-h-screen bg-gradient-to-r pt-28 px-4">
 
       {/* MAIN CONTAINER */}
-      <div className="max-w-6xl mx-auto bg-nav-bg rounded-[48px] md:p-20 shadow-xl mt-20 mb-20">
+      <div className="max-w-6xl mx-auto bg-nav-bg rounded-[48px] p-8 md:p-20 shadow-xl mt-20 mb-20">
 
         {/* HERO SECTION */}
         <div className="max-w-4xl mx-auto mb-10 md:mb-16 text-center">
