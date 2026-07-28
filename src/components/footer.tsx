@@ -5,16 +5,16 @@ export function Footer() {
     <footer className="bg-foreground text-background">
       <div className="container mx-auto px-4">
         {/* Main footer content */}
-        <div className="py-20 grid grid-cols-1 md:grid-cols-4 gap-12 lg:gap-8 max-w-7xl mx-auto">
+        <div className="py-20 grid grid-cols-1 md:grid-cols-4 gap-12 lg:gap-8 max-w-7xl mx-auto items-start">
           {/* Brand */}
           <div className="space-y-6 md:col-span-2">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               <img
                 src="/logo/web3uoa_logo.png"
                 alt="WEB3UOA"
-                className="w-10 h-10 brightness-0 invert"
+                className="w-10 h-10 shrink-0 brightness-0 invert"
               />
-              <span className="text-2xl font-black tracking-tight">
+              <span className="text-2xl font-black tracking-tight whitespace-nowrap">
                 WEB3UOA
               </span>
             </div>
@@ -29,19 +29,19 @@ export function Footer() {
             <h3 className="font-bold text-lg text-white">Navigate</h3>
             <div className="flex flex-col gap-4">
               <a
-                href="#about"
+                href="/pages/about"
                 className="text-base text-background/70 hover:text-white transition-colors w-fit font-semibold"
               >
                 About
               </a>
               <a
-                href="#events"
+                href="/pages/events"
                 className="text-base text-background/70 hover:text-white transition-colors w-fit font-semibold"
               >
                 Events
               </a>
               <a
-                href="#partners"
+                href="/pages/partners"
                 className="text-base text-background/70 hover:text-white transition-colors w-fit font-semibold"
               >
                 Partners
@@ -106,7 +106,7 @@ export function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="py-8 border-t border-background/20 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-background/50 font-medium">
+        <div className="py-8 border-t border-background/20 flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-2 sm:gap-4 text-sm text-background/50 font-medium text-center">
           <p>&copy; {new Date().getFullYear()} WEB3UOA. All rights reserved.</p>
           <p>University of Auckland Web3 Club</p>
         </div>
