@@ -22,8 +22,6 @@ const events = [
   },
 ];
 
-const test : string = 42;
-
 export function About() {
   return (
 
