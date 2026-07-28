@@ -18,8 +18,9 @@ export function Hero() {
 
             <div className="flex flex-col sm:flex-row items-center lg:justify-start justify-center gap-4 pt-4">
               <Button
+                variant="pill" // This is a custom button style defined in button.tsx
                 size="lg"
-                className="text-base px-8 h-14 border-2 transition-all rounded-xl font-bold !bg-nav-bg !border-button-bor !text-button-bor hover:!bg-button-bor hover:!text-white hover:!border-button-bor"
+                className="text-base px-6 h-12 rounded-2xl" // rounded-2xl is needed for the pill style to work properly
                 asChild
               >
                 <a
@@ -30,8 +31,9 @@ export function Hero() {
                 </a>
               </Button>
               <Button
+                variant="pill" // This is a custom button style defined in button.tsx
                 size="lg"
-                className="text-base px-8 h-14 border-2 transition-all rounded-xl font-bold !bg-nav-bg !border-button-bor !text-button-bor hover:!bg-button-bor hover:!text-white hover:!border-button-bor"
+                className="text-base px-6.5 h-12 rounded-2xl" // rounded-2xl is needed for the pill style to work properly
                 asChild
               >
                 <a href="/pages/about/">Learn More</a>

@@ -98,7 +98,8 @@ export function Sponsors() {
           <div className="pt-10 flex justify-center">
             <Button
               size="sm"
-              className="h-12 text-base rounded-xl font-bold border-2 transition-all !bg-nav-bg !border-button-bor !text-button-bor hover:!bg-button-bor hover:!text-white hover:!border-button-bor"
+              variant="pill"
+              className="text-base px-5 h-12 rounded-2xl"
               asChild
             >
               <a href="mailto:team@web3uoa.nz">Become a Partner</a>
