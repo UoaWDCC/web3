@@ -8,6 +8,7 @@ import { isAllowedAdminAddress } from "@/lib/admin-auth";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { WalletButton } from "./wallet-button";
+import { ProfileSearch } from "./profile-search";
 
 const navLinks = [
   { label: "About", href: "/pages/about" },
@@ -29,9 +30,11 @@ export function Navbar() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [themeReady, setThemeReady] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const { address } = useAccount();
 
   const pathname = usePathname();
+  const isProfileDashboard = pathname === "/profile";
 
   useEffect(() => {
     setMounted(true);
@@ -80,13 +83,14 @@ export function Navbar() {
   };
 
   return (
-    <nav
-      className="absolute z-50 bg-nav-bg border-b border-white/10
-      w-[95%] sm:w-[90%] lg:w-[85%] xl:w-[80%]
-      left-1/2 -translate-x-1/2 top-[3%] sm:top-[5%]
-      rounded-full text-nav-text shadow-lg"
-    >
-      <div className="h-14 sm:h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 gap-4">
+    <>
+      <nav
+        className="absolute z-50 bg-nav-bg border-b border-white/10
+        w-[95%] sm:w-[90%] lg:w-[85%] xl:w-[80%]
+        left-1/2 -translate-x-1/2 top-[3%] sm:top-[5%]
+        rounded-full text-nav-text shadow-lg"
+      >
+        <div className="h-14 sm:h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 gap-4">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group shrink-0 min-w-0">
           <img
@@ -129,11 +133,19 @@ export function Navbar() {
             <WalletButton />
           </div>
 
-            {/* Search button */}
-          <button className="flex items-center gap-2 bg-white/100 hover:bg-white/15 border border-white/20 rounded-full px-4 py-2 transition-colors">
-        <Search className="w-4 h-4 text-nav-text/100" />
-        <span className="text-sm text-nav-text/100 whitespace-nowrap">Search person or wallet ID</span>
-      </button>
+          {isProfileDashboard && (
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              className="flex items-center gap-2 rounded-full border border-black/10 bg-black/5 px-4 py-2 text-nav-text transition-colors hover:bg-black/10 dark:border-white/20 dark:bg-white/10 dark:hover:bg-white/15"
+              aria-label="Search public profiles"
+            >
+              <Search className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span className="whitespace-nowrap text-sm">
+                Search person or wallet ID
+              </span>
+            </button>
+          )}
 
           {/* Theme toggle button */}
           <Button
@@ -187,7 +199,7 @@ export function Navbar() {
             )}
           </button>
         </div>
-      </div>
+        </div>
 
       {/* Mobile dropdown */}
       {mobileOpen && (
@@ -221,9 +233,28 @@ export function Navbar() {
             <div className="pt-3 px-3" onClickCapture={() => setMobileOpen(false)}>
               <WalletButton />
             </div>
+
+            {isProfileDashboard && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileOpen(false);
+                  setSearchOpen(true);
+                }}
+                className="mt-2 flex items-center gap-2 rounded-xl px-3 py-3 text-left text-nav-text transition-colors hover:bg-white/10"
+              >
+                <Search className="h-4 w-4" aria-hidden="true" />
+                <span className="font-semibold">Search profiles</span>
+              </button>
+            )}
           </div>
         </div>
       )}
-    </nav>
+      </nav>
+
+      {isProfileDashboard && (
+        <ProfileSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
+      )}
+    </>
   );
 }
