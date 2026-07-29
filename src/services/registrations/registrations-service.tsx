@@ -6,16 +6,13 @@ export const dynamic = "force-dynamic";
 export const RegistrationService = {
   submitRegistration: async (registrationData: RegistrationData) => {
     const supabase = getSupabase();
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("registrations")
-      .insert([registrationData])
-      .select();
+      .insert([registrationData]);
 
     if (error) {
       throw error;
     }
-
-    return data;
   },
 
   isEmailTaken: async (email: string) => {

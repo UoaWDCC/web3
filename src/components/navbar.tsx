@@ -34,7 +34,8 @@ export function Navbar() {
   const { address } = useAccount();
 
   const pathname = usePathname();
-  const isProfileDashboard = pathname === "/profile";
+  const isProfileDashboard =
+    pathname === "/profile" || pathname.startsWith("/profile/");
 
   useEffect(() => {
     setMounted(true);
