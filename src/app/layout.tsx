@@ -9,8 +9,11 @@ export const metadata: Metadata = {
   title: "WEB3UOA - University of Auckland Web3 Club",
   description: "Educating the next generation of blockchain innovators.",
   icons: {
-    icon: "/logo/web3uoa_logo.png",
-    shortcut: "/logo/web3uoa_logo.png",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/logo/web3uoa_logo.png", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
     apple: "/logo/web3uoa_logo.png",
   },
 };
