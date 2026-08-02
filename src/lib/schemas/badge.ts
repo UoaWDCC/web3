@@ -6,7 +6,7 @@ export enum BadgeType {
   Special = "SPECIAL",
 }
 
-export const badgeSchema = z.object({
+const badgeSchema = z.object({
   name: z.string(),
   category: z.nativeEnum(BadgeType),
   description: z.string(),
@@ -15,3 +15,6 @@ export const badgeSchema = z.object({
   eventid: z.int(), // check wether this event id is present
   isactive: z.boolean(),
 });
+
+export type Badge = z.infer<typeof badgeSchema>;
+export { badgeSchema };
