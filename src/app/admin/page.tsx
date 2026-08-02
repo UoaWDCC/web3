@@ -5,6 +5,7 @@ import { useWallet } from "@/hooks/use-wallet";
 import { useSignMessage } from "wagmi";
 import { Button } from "@/components/ui/button";
 import { WalletButton } from "@/components/wallet-button";
+import QrCode from 'qrcode';
 
 export const dynamic = "force-dynamic";
 export default function AdminPage() {
@@ -16,6 +17,36 @@ export default function AdminPage() {
   const [activeNames, setActiveNames] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+
+  {/* QR Code Generation State */}
+  const [url,setUrl] = useState("");
+  const [qrcode, setQrcode] = useState("");
+
+  const GenerateQRcode = () => {
+    const array = crypto.getRandomValues(new Uint8Array(32));
+    const random_token = btoa(Array.from(array, (b) => String.fromCharCode(b)).join(""))
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");  // we want this eg. xJ8-K3z_9vQ not xJ8-K3z_9vQ==
+    setUrl(random_token);
+    QrCode.toDataURL(random_token, {
+      errorCorrectionLevel: 'H', // High error correction
+      type: 'image/png', // PNG format
+      margin: 2, // Small margin
+      color: {
+        dark: "#000000", // Dark color
+        light: "#FFFFFF" // Light color
+      }
+    }, (err, dataUrl) => {
+      if (err) {
+        console.error(err);
+        return;
+      }
+      setQrcode(dataUrl);
+    });
+  };
+
 
   const authenticate = async () => {
     if (!address) return;
@@ -247,6 +278,21 @@ export default function AdminPage() {
               </p>
             )}
           </div>
+        </div>
+        {/* QR Code Generation Section */}
+        <div>
+          <h2 className="text-2xl font-bold mb-6 border-b border-border pb-4">
+            QR Code Generator
+          </h2>
+          <Button onClick={GenerateQRcode} variant="outline">
+            Generate QR Code
+          </Button>
+          {qrcode && (
+            <div className="mt-4 flex flex-col items-center gap-2">
+              <img src={qrcode} alt="QR code for this page" className="w-40 h-40" />
+              <p className="text-xs text-foreground/60 break-all">{url}</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
