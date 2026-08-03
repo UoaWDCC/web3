@@ -13,21 +13,33 @@ export enum BadgeType {
 const badgeFieldsSchema = z.object({
   name: z.string().trim().min(1, "Badge name is required"),
   category: z.nativeEnum(BadgeType),
-  description: z.string().trim().nullable().default(null),
-  imageurl: z.string().trim().nullable().default(null),
-  criteria: z.string().trim().nullable().default(null),
-  eventid: z.uuid().nullable().default(null),
-  isactive: z.boolean().default(true),
+  description: z.string().trim().nullable(),
+  imageurl: z.string().trim().nullable(),
+  criteria: z.string().trim().nullable(),
+  eventid: z.uuid().nullable(),
+  isactive: z.boolean(),
 });
 
-// An EVENT badge is meaningless without the event it belongs to. Updates can't
-// check this rule in isolation — a patch may change only `category` while
-// `eventid` is already set on the row — so the authoritative check lives in the
-// `badges_event_requires_eventid` constraint. This is just the early feedback.
-const badgeInsertSchema = badgeFieldsSchema.refine(
-  (badge) => badge.category !== BadgeType.Event || badge.eventid !== null,
-  { path: ["eventid"], message: "An EVENT badge must reference an event" },
-);
+// Defaults are layered on here rather than declared on the shared field schema,
+// because `.partial()` makes a key optional but still applies its default — so
+// a default on `badgeFieldsSchema` would leak into `badgeUpdateSchema` and make
+// every patch silently overwrite the columns the caller never mentioned.
+//
+// The EVENT rule is early feedback only. A partial update can't check it in
+// isolation, since a patch may change `category` alone while `eventid` is
+// already set on the row, so the database constraint is the real guarantee.
+const badgeInsertSchema = badgeFieldsSchema
+  .extend({
+    description: badgeFieldsSchema.shape.description.default(null),
+    imageurl: badgeFieldsSchema.shape.imageurl.default(null),
+    criteria: badgeFieldsSchema.shape.criteria.default(null),
+    eventid: badgeFieldsSchema.shape.eventid.default(null),
+    isactive: badgeFieldsSchema.shape.isactive.default(true),
+  })
+  .refine(
+    (badge) => badge.category !== BadgeType.Event || badge.eventid !== null,
+    { path: ["eventid"], message: "An EVENT badge must reference an event" },
+  );
 
 const badgeUpdateSchema = badgeFieldsSchema.partial();
 
