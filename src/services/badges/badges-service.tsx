@@ -8,7 +8,7 @@ export default class BadgesService {
    * @returns The created badge.
    */
   public async createBadge(badge: Badge): Promise<Badge> {
-    const supabase = await getSupabase();
+    const supabase = getSupabase();
     const { data, error } = await supabase
       .from("badges")
       .insert([badge])
@@ -23,7 +23,7 @@ export default class BadgesService {
    * @returns The badge with the specified ID.
    */
   public async getBadgeById(id: string): Promise<Badge> {
-    const supabase = await getSupabase();
+    const supabase = getSupabase();
     const { data, error } = await supabase.from("badges").select().eq("id", id);
     if (error) throw error;
     return data[0];
@@ -34,7 +34,7 @@ export default class BadgesService {
    * @returns An array of all badges.
    */
   public async getAllBadges(): Promise<Badge[]> {
-    const supabase = await getSupabase();
+    const supabase = getSupabase();
     const { data, error } = await supabase.from("badges").select();
     if (error) throw error;
     return data;
@@ -46,7 +46,7 @@ export default class BadgesService {
    * @returns An array of {@link Badge} with the specified name.
    */
   public async getAllBadgesByName(name: string): Promise<Badge[]> {
-    const supabase = await getSupabase();
+    const supabase = getSupabase();
     const { data, error } = await supabase
       .from("badges")
       .select()
@@ -56,11 +56,28 @@ export default class BadgesService {
   }
 
   /**
+   * Updates a {@link Badge} by its ID.
+   * @param id The ID of the badge to update.
+   * @param badge The updated badge data.
+   * @returns The updated {@link Badge}.
+   */
+  public async updateBadgesById(id: string, badge: Badge): Promise<Badge> {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from("badges")
+      .update(badge)
+      .eq("id", id)
+      .select();
+    if (error) throw error;
+    return data[0];
+  }
+
+  /**
    * Deletes a {@link Badge} by its ID.
    * @param id The ID of the badge to delete.
    */
   public async deleteBadgeById(id: string): Promise<void> {
-    const supabase = await getSupabase();
+    const supabase = getSupabase();
     const { error } = await supabase.from("badges").delete().eq("id", id);
     if (error) throw error;
   }
