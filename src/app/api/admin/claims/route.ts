@@ -36,7 +36,6 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
 
-  
   try {
     const prisma = getPrisma();
     const claims = await prisma.claimRequest.findMany({
@@ -58,9 +57,8 @@ export async function PUT(req: NextRequest) {
   if (!isAuth)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  
   try {
-    const prisma = getPrisma(); 
+    const prisma = getPrisma();
     const body = await req.json();
     const { id, status } = body; // status can be "APPROVED", "REJECTED"
 
