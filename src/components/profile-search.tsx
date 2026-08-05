@@ -197,11 +197,9 @@ export function ProfileSearch({ open, onClose }: ProfileSearchProps) {
                         )}
                       </div>
 
-                      {profile.wallet_suffix && (
-                        <span className="shrink-0 font-mono text-xs font-bold text-slate-700 dark:text-white/75">
-                          ••••{profile.wallet_suffix}
-                        </span>
-                      )}
+                      <span className="shrink-0 font-mono text-xs font-bold text-slate-700 dark:text-white/75">
+                        ••••{profile.wallet_suffix}
+                      </span>
                     </button>
                   </li>
                 ))}

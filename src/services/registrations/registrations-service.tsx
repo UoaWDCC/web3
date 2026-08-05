@@ -2,6 +2,18 @@ import { RegistrationData } from "../../lib/schemas/registration";
 import { getSupabase } from "../supabase";
 
 const PROFILE_PICTURE_BUCKET = "profile_pictures";
+
+type ProfileVisibilityChallenge = {
+  message: string;
+  nonce: string;
+  expires_at: string;
+  challenge_token: string;
+};
+
+type ProfileVisibilityResult = {
+  visible: boolean;
+};
+
 export const dynamic = "force-dynamic";
 export const RegistrationService = {
   submitRegistration: async (registrationData: RegistrationData) => {
@@ -75,6 +87,83 @@ export const RegistrationService = {
 
   normalizeWalletAddress: (walletAddress: string) =>
     walletAddress.trim().toLowerCase(),
+
+  requestProfileVisibilityChallenge: async ({
+    walletAddress,
+    visible,
+  }: {
+    walletAddress: string;
+    visible: boolean;
+  }) => {
+    const supabase = getSupabase();
+    const { data, error } = await supabase.functions.invoke(
+      "profile-visibility",
+      {
+        body: {
+          action: "challenge",
+          wallet_address:
+            RegistrationService.normalizeWalletAddress(walletAddress),
+          visible,
+        },
+      },
+    );
+
+    if (error) {
+      throw error;
+    }
+
+    const challenge = data as Partial<ProfileVisibilityChallenge> | null;
+    if (
+      !challenge?.message ||
+      !challenge.nonce ||
+      !challenge.expires_at ||
+      !challenge.challenge_token
+    ) {
+      throw new Error("Profile visibility verification is unavailable.");
+    }
+
+    return challenge as ProfileVisibilityChallenge;
+  },
+
+  updateProfileVisibility: async ({
+    walletAddress,
+    visible,
+    challenge,
+    signature,
+  }: {
+    walletAddress: string;
+    visible: boolean;
+    challenge: ProfileVisibilityChallenge;
+    signature: string;
+  }) => {
+    const supabase = getSupabase();
+    const { data, error } = await supabase.functions.invoke(
+      "profile-visibility",
+      {
+        body: {
+          action: "update",
+          wallet_address:
+            RegistrationService.normalizeWalletAddress(walletAddress),
+          visible,
+          nonce: challenge.nonce,
+          expires_at: challenge.expires_at,
+          challenge_token: challenge.challenge_token,
+          signature,
+        },
+      },
+    );
+
+    if (error) {
+      throw error;
+    }
+
+    const result = data as Partial<ProfileVisibilityResult> | null;
+    if (typeof result?.visible !== "boolean") {
+      throw new Error("Profile visibility could not be confirmed.");
+    }
+
+    return result as ProfileVisibilityResult;
+  },
 
   getProfilePicturePath: (email: string, file: File) => {
     const cleanEmail = email.trim().toLowerCase();

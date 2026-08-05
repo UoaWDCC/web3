@@ -5,7 +5,7 @@ export type PublicProfile = {
   display_name: string;
   unique_name: string | null;
   profile_picture_url: string | null;
-  wallet_suffix: string | null;
+  wallet_suffix: string;
   badges: string[];
   events_attended: string[];
   created_at: string;

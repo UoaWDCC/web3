@@ -101,9 +101,7 @@ export default function PublicProfilePage() {
 
             <div className="mt-6 flex flex-col items-center md:items-start gap-4">
               <span className="font-mono text-sm">
-                {profile.wallet_suffix
-                  ? `Wallet ••••${profile.wallet_suffix}`
-                  : "Wallet not connected"}
+                Wallet ••••{profile.wallet_suffix}
               </span>
             </div>
           </div>
