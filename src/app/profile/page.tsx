@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useWallet } from "@/hooks/use-wallet";
 import { useSignMessage } from "wagmi";
 import { WalletButton } from "@/components/wallet-button";
@@ -42,6 +42,7 @@ export default function ProfilePage() {
   const [qrLoading, setQrLoading] = useState(false);
   const [qrError, setQrError] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const qrContainerRef = useRef<HTMLDivElement>(null);
 
   // Theme is toggled elsewhere by adding/removing "dark" on <html>, so we
   // just watch for that instead of pulling in a theme context here.
@@ -72,6 +73,24 @@ export default function ProfilePage() {
       .then(setQrImage)
       .catch((error) => setQrError(getErrorMessage(error)));
   }, [qrPayload, isDarkMode]);
+
+  // Closes the qr code popup when tapping outside, since it can be opened by tapping on
+  // touch devices where there's no mouseleave to fall back on.
+  useEffect(() => {
+    if (!qrHovered) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (
+        qrContainerRef.current &&
+        !qrContainerRef.current.contains(event.target as Node)
+      ) {
+        setQrHovered(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [qrHovered]);
 
   const loadQr = async () => {
     if (!address || qrPayload || qrLoading) return;
@@ -306,6 +325,7 @@ export default function ProfilePage() {
       {/* Profile Card */}
       <div className="relative bg-white/80 w-full max-w-[90vw] lg:w-[80vw] lg:max-w-[90vw] p-8 lg:p-15 rounded-2xl overflow-visible shadow-lg dark:bg-[#404246]/85 dark:shadow-black/20">
         <div
+          ref={qrContainerRef}
           className="absolute top-4 right-4 z-40"
           onMouseEnter={() => {
             setQrHovered(true);
