@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useWallet } from "@/hooks/use-wallet";
 import { useSignMessage } from "wagmi";
 import { Button } from "@/components/ui/button";
 import { WalletButton } from "@/components/wallet-button";
-import QrCode from 'qrcode';
+import QrScanner from "qr-scanner";
 
 export const dynamic = "force-dynamic";
 export default function AdminPage() {
@@ -15,64 +15,127 @@ export default function AdminPage() {
 
   const [claims, setClaims] = useState<any[]>([]);
   const [activeNames, setActiveNames] = useState<any[]>([]);
+  const [events, setEvents] = useState<
+    { id: string; title: string; start_time: string }[]
+  >([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
 
-  {/* QR Code Generation State */}
+  {/* Check-in QR Scanner State */}
   const [checkinEventId, setCheckinEventId] = useState("");
-  const [qrcode, setQrcode] = useState("");
-  const [shortCode, setShortCode] = useState("");
-  const [tokenExpiresAt, setTokenExpiresAt] = useState("");
-  const [qrError, setQrError] = useState("");
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [scanStatus, setScanStatus] = useState<"scanning" | "result">(
+    "scanning",
+  );
+  const [scanResult, setScanResult] = useState<{
+    name: string;
+    alreadyCheckedIn: boolean;
+  } | null>(null);
+  const [scanError, setScanError] = useState("");
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const qrScannerRef = useRef<QrScanner | null>(null);
 
-  const GenerateQRcode = async () => {
-    if (!authHeader || !checkinEventId) return;
-    setQrError("");
+  const openScanner = () => {
+    if (!checkinEventId.trim()) {
+      setScanError("Enter an event id first");
+      return;
+    }
+    setScanError("");
+    setScanResult(null);
+    setScanStatus("scanning");
+    setScannerOpen(true);
+  };
+
+  const closeScanner = () => {
+    setScannerOpen(false);
+    setScanStatus("scanning");
+    setScanResult(null);
+    setScanError("");
+  };
+
+  const handleDecoded = async (qrSecret: string) => {
+    if (!authHeader) return;
+    setScanStatus("result");
     try {
-      const res = await fetch("/api/admin/checkin/generate", {
-        method: "POST",
-        headers: { ...authHeader, "Content-Type": "application/json" },
-        body: JSON.stringify({ eventId: checkinEventId }),
-      });
+      const verify = (headers: any) =>
+        fetch("/api/admin/checkin/verify", {
+          method: "POST",
+          headers: { ...headers, "Content-Type": "application/json" },
+          body: JSON.stringify({ qrSecret, eventId: checkinEventId.trim() }),
+        });
+
+      let res = await verify(authHeader);
+
+      // The admin signature is only valid for 5 minutes; if it expired
+      // between signing in and this scan, re-sign once and retry instead
+      // of dead-ending on "Unauthorized".
+      if (res.status === 401) {
+        const freshHeaders = await signAdminAuth();
+        res = await verify(freshHeaders);
+      }
+
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to generate token");
+      if (!res.ok) throw new Error(data.error || "Check-in failed");
 
-      setShortCode(data.shortCode);
-      setTokenExpiresAt(data.expiresAt);
-
-      const dataUrl = await QrCode.toDataURL(data.token, {
-        errorCorrectionLevel: 'H', // High error correction
-        type: 'image/png', // PNG format
-        margin: 2, // Small margin
-        color: {
-          dark: "#000000", // Dark color
-          light: "#FFFFFF" // Light color
-        }
+      setScanResult({
+        name: data.member.name,
+        alreadyCheckedIn: data.alreadyCheckedIn,
       });
-      setQrcode(dataUrl);
     } catch (err: any) {
-      setQrError(err.message);
-      setQrcode("");
+      setScanError(err.message || "Check-in failed");
     }
   };
 
+  // Starts the camera whenever the modal is showing the live scan view, and
+  // tears it down whenever we leave that view (result shown, or closed).
+  useEffect(() => {
+    if (!scannerOpen || scanStatus !== "scanning" || !videoRef.current)
+      return;
+
+    const scanner = new QrScanner(
+      videoRef.current,
+      (result) => handleDecoded(result.data),
+      { highlightScanRegion: true, highlightCodeOutline: true },
+    );
+    qrScannerRef.current = scanner;
+
+    scanner.start().catch((err: any) => {
+      setScanError(err?.message || "Failed to access camera");
+    });
+
+    return () => {
+      scanner.stop();
+      scanner.destroy();
+      qrScannerRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scannerOpen, scanStatus]);
+
+
+  // Signs a fresh "Admin Auth" message and stores it as the active auth
+  // headers. Pulled out of authenticate() so handleDecoded can also call it
+  // to silently re-sign and retry when a scan hits an expired signature.
+  const signAdminAuth = async () => {
+    if (!address) throw new Error("Wallet not connected");
+    const timestamp = Date.now().toString();
+    const signature = await signMessageAsync({
+      message: `Admin Auth ${timestamp}`,
+    });
+
+    const headers = {
+      "x-admin-address": address,
+      "x-admin-signature": signature,
+      "x-admin-timestamp": timestamp,
+    };
+
+    setAuthHeader(headers);
+    return headers;
+  };
 
   const authenticate = async () => {
-    if (!address) return;
     try {
-      const timestamp = Date.now().toString();
-      const signature = await signMessageAsync({
-        message: `Admin Auth ${timestamp}`,
-      });
-
-      const headers = {
-        "x-admin-address": address,
-        "x-admin-signature": signature,
-        "x-admin-timestamp": timestamp,
-      };
-
-      setAuthHeader(headers);
+      const headers = await signAdminAuth();
       fetchData(headers);
     } catch (err: any) {
       setError(err.message || "Failed to authenticate");
@@ -82,9 +145,10 @@ export default function AdminPage() {
   const fetchData = async (headers: any) => {
     setLoading(true);
     try {
-      const [claimsRes, namesRes] = await Promise.all([
+      const [claimsRes, namesRes, eventsRes] = await Promise.all([
         fetch("/api/admin/claims", { headers }),
         fetch("/api/admin/names", { headers }),
+        fetch("/api/admin/events", { headers }),
       ]);
 
       if (claimsRes.ok) {
@@ -100,6 +164,11 @@ export default function AdminPage() {
         if (err.error === "Unauthorized") {
           setAuthHeader(null); // Force re-auth
         }
+      }
+
+      if (eventsRes.ok) {
+        const data = await eventsRes.json();
+        setEvents(data.events || []);
       }
     } catch (err: any) {
       setError(err.message);
@@ -289,33 +358,96 @@ export default function AdminPage() {
             )}
           </div>
         </div>
-        {/* QR Code Generation Section */}
-        <div>
-          <h2 className="text-2xl font-bold mb-6 border-b border-border pb-4">
-            Check-in QR Code Generator
+        {/* Check-in QR Scanner */}
+        <div className="bg-sky-100 dark:bg-sky-950/40 rounded-2xl p-6">
+          <h2 className="text-2xl font-bold mb-1 text-sky-700 dark:text-sky-300">
+            Check Event Attendance
           </h2>
-          <input
-            type="text"
-            placeholder="eventId (uuid from events table)"
+          <p className="font-semibold mb-4">QR Code Scanner</p>
+          <select
             value={checkinEventId}
             onChange={(e) => setCheckinEventId(e.target.value)}
-            className="border border-border rounded px-2 py-1 mr-2 text-sm w-80"
-          />
-          <Button onClick={GenerateQRcode} variant="outline">
-            Generate QR Code
+            className="border border-border rounded px-2 py-1 mb-3 text-sm w-full max-w-80 block bg-white/70 dark:bg-black/20"
+          >
+            <option value="">Select an event…</option>
+            {events.map((event) => (
+              <option key={event.id} value={event.id}>
+                {event.title} ({new Date(event.start_time).toLocaleDateString()})
+              </option>
+            ))}
+          </select>
+          <Button onClick={openScanner} className="bg-blue-600 hover:bg-blue-700">
+            Scan Code
           </Button>
-          {qrError && <p className="text-red-500 mt-2 text-sm">{qrError}</p>}
-          {qrcode && (
-            <div className="mt-4 flex flex-col items-center gap-2">
-              <img src={qrcode} alt="Check-in QR code" className="w-40 h-40" />
-              <p className="text-sm font-mono tracking-widest">{shortCode}</p>
-              <p className="text-xs text-foreground/60">
-                Expires: {new Date(tokenExpiresAt).toLocaleTimeString()}
-              </p>
-            </div>
+          {scanError && !scannerOpen && (
+            <p className="text-red-500 mt-2 text-sm">{scanError}</p>
           )}
         </div>
       </div>
+
+      {scannerOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex flex-col items-center justify-center p-4">
+          <div className="bg-background rounded-2xl p-4 w-full max-w-sm flex flex-col items-center gap-4">
+            {scanStatus === "scanning" && (
+              <>
+                <p className="font-semibold">
+                  Scanning for{" "}
+                  {events.find((event) => event.id === checkinEventId)
+                    ?.title || "event"}
+                </p>
+                <video
+                  ref={videoRef}
+                  className="w-full aspect-square rounded-xl object-cover bg-black"
+                  muted
+                  playsInline
+                />
+                {scanError && (
+                  <p className="text-red-500 text-sm">{scanError}</p>
+                )}
+              </>
+            )}
+
+            {scanStatus === "result" && (
+              <div className="flex flex-col items-center gap-3 py-6">
+                {scanResult ? (
+                  <>
+                    <p className="text-lg font-bold text-center">
+                      {scanResult.name}
+                    </p>
+                    <p
+                      className={
+                        scanResult.alreadyCheckedIn
+                          ? "text-amber-600"
+                          : "text-green-600"
+                      }
+                    >
+                      {scanResult.alreadyCheckedIn
+                        ? "Already checked in"
+                        : "Checked in successfully"}
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-red-500 text-center">{scanError}</p>
+                )}
+                <Button
+                  onClick={() => {
+                    setScanResult(null);
+                    setScanError("");
+                    setScanStatus("scanning");
+                  }}
+                  variant="outline"
+                >
+                  Scan Next
+                </Button>
+              </div>
+            )}
+
+            <Button onClick={closeScanner} variant="ghost">
+              Close
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
