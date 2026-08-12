@@ -20,31 +20,41 @@ export default function AdminPage() {
 
 
   {/* QR Code Generation State */}
-  const [url,setUrl] = useState("");
+  const [checkinEventId, setCheckinEventId] = useState("");
   const [qrcode, setQrcode] = useState("");
+  const [shortCode, setShortCode] = useState("");
+  const [tokenExpiresAt, setTokenExpiresAt] = useState("");
+  const [qrError, setQrError] = useState("");
 
-  const GenerateQRcode = () => {
-    const array = crypto.getRandomValues(new Uint8Array(32));
-    const random_token = btoa(Array.from(array, (b) => String.fromCharCode(b)).join(""))
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_")
-      .replace(/=+$/, "");  // we want this eg. xJ8-K3z_9vQ not xJ8-K3z_9vQ==
-    setUrl(random_token);
-    QrCode.toDataURL(random_token, {
-      errorCorrectionLevel: 'H', // High error correction
-      type: 'image/png', // PNG format
-      margin: 2, // Small margin
-      color: {
-        dark: "#000000", // Dark color
-        light: "#FFFFFF" // Light color
-      }
-    }, (err, dataUrl) => {
-      if (err) {
-        console.error(err);
-        return;
-      }
+  const GenerateQRcode = async () => {
+    if (!authHeader || !checkinEventId) return;
+    setQrError("");
+    try {
+      const res = await fetch("/api/admin/checkin/generate", {
+        method: "POST",
+        headers: { ...authHeader, "Content-Type": "application/json" },
+        body: JSON.stringify({ eventId: checkinEventId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to generate token");
+
+      setShortCode(data.shortCode);
+      setTokenExpiresAt(data.expiresAt);
+
+      const dataUrl = await QrCode.toDataURL(data.token, {
+        errorCorrectionLevel: 'H', // High error correction
+        type: 'image/png', // PNG format
+        margin: 2, // Small margin
+        color: {
+          dark: "#000000", // Dark color
+          light: "#FFFFFF" // Light color
+        }
+      });
       setQrcode(dataUrl);
-    });
+    } catch (err: any) {
+      setQrError(err.message);
+      setQrcode("");
+    }
   };
 
 
@@ -282,15 +292,26 @@ export default function AdminPage() {
         {/* QR Code Generation Section */}
         <div>
           <h2 className="text-2xl font-bold mb-6 border-b border-border pb-4">
-            QR Code Generator
+            Check-in QR Code Generator
           </h2>
+          <input
+            type="text"
+            placeholder="eventId (uuid from events table)"
+            value={checkinEventId}
+            onChange={(e) => setCheckinEventId(e.target.value)}
+            className="border border-border rounded px-2 py-1 mr-2 text-sm w-80"
+          />
           <Button onClick={GenerateQRcode} variant="outline">
             Generate QR Code
           </Button>
+          {qrError && <p className="text-red-500 mt-2 text-sm">{qrError}</p>}
           {qrcode && (
             <div className="mt-4 flex flex-col items-center gap-2">
-              <img src={qrcode} alt="QR code for this page" className="w-40 h-40" />
-              <p className="text-xs text-foreground/60 break-all">{url}</p>
+              <img src={qrcode} alt="Check-in QR code" className="w-40 h-40" />
+              <p className="text-sm font-mono tracking-widest">{shortCode}</p>
+              <p className="text-xs text-foreground/60">
+                Expires: {new Date(tokenExpiresAt).toLocaleTimeString()}
+              </p>
             </div>
           )}
         </div>
