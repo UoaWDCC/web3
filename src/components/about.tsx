@@ -27,19 +27,17 @@ export function About() {
 
     <section id="about" className="min-h-screen bg-gradient-to-r pt-28 px-4">
       {/* MAIN CONTAINER */}
-      <div className="w-full max-w-6xl mx-auto bg-nav-bg rounded-[48px] p-6 sm:p-10 md:p-16 shadow-xl my-10 md:my-20">
-      <div className="container mx-auto px-2 sm:px-4">
+      <div className="max-w-6xl mx-auto bg-nav-bg rounded-[48px] p-8 md:p-16 shadow-xl mt-20 mb-20">
 
         {/* Section header */}
-        <div className="mb-10 md:mb-16 space-y-4 max-w-2xl">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-hero-text font-sans">
-            Building the <br />
-            Decentralised Future
+        <div className="max-w-4xl mx-auto mb-14 text-center">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black leading-tight tracking-tight text-hero-text font-sans md:whitespace-nowrap">
+            Building the Decentralised future
           </h2>
 
-          <p className="text-base sm:text-lg leading-relaxed text-hero-text font-sans font-medium">
-            We are Auckland's premier student-led organisation dedicated <br/>
-            to blockchain education and innovation. We bridge the gap between <br/>
+          <p className="pt-4 text-base sm:text-xl leading-relaxed text-hero-text font-sans font-medium">
+            We are Auckland's premier student-led organisation dedicated to <br/>
+             blockchain education and innovation. We bridge the gap between <br/>
             university theory and industry-grade Web3 development.
           </p>
         </div>
@@ -74,8 +72,6 @@ export function About() {
           })}
         </div>
       </div>
-      </div>
     </section>
-    
   );
 }

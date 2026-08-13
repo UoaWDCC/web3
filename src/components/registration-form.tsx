@@ -14,6 +14,7 @@ import {
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormInput, FormSelect } from "./ui/form-field";
+import { Button } from "./ui/button";
 import { RegistrationService } from "../services/registrations/registrations-service";
 
 /**
@@ -256,14 +257,14 @@ export function RegistrationForm() {
             {...register("goal_statement")}
           />
 
-          <button
+          <Button
             type="submit"
-            className="mt-4 mx-auto w-full sm:w-54 rounded-xl px-4 py-2.5 text-2xl font-bold shadow-sm cursor-pointer 
-            bg-white text-button-txt transition-colors hover:bg-button-txt hover:text-white
-            border-2 border-button-txt"
+            variant="pill"
+            size="lg"
+            className="text-base px-13 h-12 rounded-2xl mt-5"
           >
             Submit
-          </button>
+          </Button>
         </form>
       )}
     </div>
