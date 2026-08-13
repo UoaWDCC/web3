@@ -14,7 +14,7 @@ function truncateAddress(address: string) {
 
 type AuthStatus = "idle" | "checking" | "logged_in" | "logged_out" | "error";
 
-export function WalletButton() {
+export function WalletButton({ variant = "pill" }: { variant?: "pill" | "nav" }) {
   const { address, isConnected, mounted } = useWallet();
   const router = useRouter();
 
@@ -57,10 +57,9 @@ export function WalletButton() {
   }, [mounted, isConnected, address]);
 
   const buttonClass =
-    "text-base px-6 h-12 border-2 rounded-xl font-bold " +
-    "inline-flex items-center justify-center " +
-    "!bg-nav-bg !border-button-bor !text-button-bor " +
-    "transition-all hover:!bg-button-bor hover:!text-white";
+    variant === "nav"
+      ? "nav-bar-text text-base font-semibold tracking-wide transition-colors duration-100 hover:text-nav-text-hover hover:bg-transparent cursor-pointer inline-flex items-center whitespace-nowrap"
+      : "text-base px-6 h-12 rounded-2xl inline-flex items-center justify-center";
 
 
   if (!mounted) {
@@ -79,7 +78,7 @@ export function WalletButton() {
       {isConnected && address && authStatus === "logged_in" ? (
         <Button
           size="sm"
-          variant="outline"
+          variant={variant === "nav" ? "ghost" : "pill"}
           asChild
           className={buttonClass}
         >
@@ -91,7 +90,7 @@ export function WalletButton() {
       ) : (
         <Button
           size="sm"
-          variant="outline"
+          variant={variant === "nav" ? "ghost" : "pill"}
           onClick={() => setShowLogin(true)}
           disabled={authStatus === "checking"}
           className={buttonClass}

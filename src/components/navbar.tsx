@@ -144,7 +144,7 @@ export function Navbar() {
           </button>
 
           <div className="flex items-center shrink-0">
-            <WalletButton />
+            <WalletButton variant="nav" />
           </div>
 
           {/* Theme toggle button */}
@@ -242,7 +242,7 @@ export function Navbar() {
             </button>
 
             <div className="pt-3 px-3" onClickCapture={() => setMobileOpen(false)}>
-              <WalletButton />
+              <WalletButton variant="nav" />
             </div>
           </div>
         </div>

@@ -53,13 +53,13 @@ export function Sponsors() {
       <div className="max-w-6xl mx-auto bg-nav-bg rounded-[48px] p-8 md:p-16 shadow-xl mt-20 mb-20">
         <div className="container mx-auto px-2 sm:px-4">
           {/* Section header */}
-          <div className="mb-10 md:mb-16 space-y-4 max-w-2xl">
-            <h2 className="text-5xl md:text-6xl font-black leading-tight mb-4 text-hero-text font-sans">
+          <div className="max-w-4xl mx-auto mb-14 text-center">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black leading-tight mb-4 text-hero-text font-sans">
               Our Sponsors
             </h2>
-            <p className="text-base sm:text-lg md:text-xl text-hero-text font-sans font-medium">
-              Collaborating with industry leaders to drive<br />
-              the future of Web3 in New Zealand.
+            <p className="pt-2 text-base sm:text-xl text-hero-text font-sans font-medium">
+              Collaborating with industry leaders to drive the<br />
+               future of Web3 in New Zealand.
             </p>
           </div>
 
@@ -95,10 +95,11 @@ export function Sponsors() {
           </div>
 
           {/* Become a Partner button*/}
-          <div className="pt-10">
+          <div className="pt-10 flex justify-center">
             <Button
               size="sm"
-              className="h-12 rounded-xl font-bold border-2 transition-all !bg-nav-bg !border-button-bor !text-button-bor hover:!bg-button-bor hover:!text-white hover:!border-button-bor"
+              variant="pill"
+              className="text-base px-5 h-12 rounded-2xl"
               asChild
             >
               <a href="mailto:team@web3uoa.nz">Become a Partner</a>
