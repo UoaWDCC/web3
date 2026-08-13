@@ -20,7 +20,7 @@ const navLinks = [
   // { label: "Partners", href: "#partners" },
   // { label: "Search", href: "#search" }, // TODO: add search page
   { label: "Join Us", href: "/pages/join-us" },
-  // { label: "Claim ID", href: "/pages/claim-id" },
+  { label: "Claim ID", href: "/pages/claim-id" },
   //{ label: "Connect Wallet", href: "/pages/claim-id" }, // TODO: add wallet connection
   //{ label: "Claim your Web3 ID!", href: "#identity", isCTA: true }  // not sure if need 
 ];
@@ -34,8 +34,6 @@ export function Navbar() {
   const { address } = useAccount();
 
   const pathname = usePathname();
-  const isProfileDashboard =
-    pathname === "/profile" || pathname.startsWith("/profile/");
 
   useEffect(() => {
     setMounted(true);
@@ -87,7 +85,7 @@ export function Navbar() {
     <>
       <nav
         className="absolute z-50 bg-nav-bg border-b border-white/10
-        w-[95%] sm:w-[90%] lg:w-[85%] xl:w-[80%]
+        w-[95%] sm:w-[90%] lg:w-[85%] xl:w-[85%]
         left-1/2 -translate-x-1/2 top-[3%] sm:top-[5%]
         rounded-full text-nav-text shadow-lg"
       >
@@ -106,7 +104,7 @@ export function Navbar() {
         </Link>
 
         {/* Desktop links */}
-        <div className="hidden xl:flex items-center gap-10 2xl:gap-16 min-w-0 ml-auto">
+        <div className="hidden xl:contents">
           {navLinks.map((link) => (
             <Link
               key={link.href}
@@ -130,23 +128,24 @@ export function Navbar() {
             </Link>
           )}
 
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
+            className="flex items-center gap-2 rounded-full border border-black/10 bg-black/5 px-4 py-2 text-nav-text transition-colors hover:bg-black/10 dark:border-white/20 dark:bg-white/10 dark:hover:bg-white/15"
+            aria-label="Search public profiles"
+          >
+            <Search className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <span className="whitespace-nowrap text-sm min-[1400px]:hidden">
+              Search profiles
+            </span>
+            <span className="hidden whitespace-nowrap text-sm min-[1400px]:inline">
+              Search person or wallet ID
+            </span>
+          </button>
+
           <div className="flex items-center shrink-0">
             <WalletButton />
           </div>
-
-          {isProfileDashboard && (
-            <button
-              type="button"
-              onClick={() => setSearchOpen(true)}
-              className="flex items-center gap-2 rounded-full border border-black/10 bg-black/5 px-4 py-2 text-nav-text transition-colors hover:bg-black/10 dark:border-white/20 dark:bg-white/10 dark:hover:bg-white/15"
-              aria-label="Search public profiles"
-            >
-              <Search className="h-4 w-4 shrink-0" aria-hidden="true" />
-              <span className="whitespace-nowrap text-sm">
-                Search person or wallet ID
-              </span>
-            </button>
-          )}
 
           {/* Theme toggle button */}
           <Button
@@ -231,31 +230,26 @@ export function Navbar() {
               </Link>
             )}
 
+            <button
+              type="button"
+              onClick={() => {
+                setMobileOpen(false);
+                setSearchOpen(true);
+              }}
+              className="mt-2 flex items-center rounded-xl px-3 py-3 text-left text-nav-text transition-colors hover:bg-white/10"
+            >
+              <span className="font-semibold">Search profiles</span>
+            </button>
+
             <div className="pt-3 px-3" onClickCapture={() => setMobileOpen(false)}>
               <WalletButton />
             </div>
-
-            {isProfileDashboard && (
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileOpen(false);
-                  setSearchOpen(true);
-                }}
-                className="mt-2 flex items-center gap-2 rounded-xl px-3 py-3 text-left text-nav-text transition-colors hover:bg-white/10"
-              >
-                <Search className="h-4 w-4" aria-hidden="true" />
-                <span className="font-semibold">Search profiles</span>
-              </button>
-            )}
           </div>
         </div>
       )}
       </nav>
 
-      {isProfileDashboard && (
-        <ProfileSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
-      )}
+      <ProfileSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
     </>
   );
 }

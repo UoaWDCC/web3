@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { LoaderCircle, Search, UserRound, X } from "lucide-react";
+import { LoaderCircle, Search, UserRound, WalletCards, X } from "lucide-react";
 import {
   PublicProfilesService,
   type PublicProfileSearchResult,
@@ -13,6 +13,58 @@ type ProfileSearchProps = {
   open: boolean;
   onClose: () => void;
 };
+
+type ProfileResultCardProps = {
+  profile: PublicProfileSearchResult;
+  onSelect: (profileId: string) => void;
+};
+
+function ProfileResultCard({ profile, onSelect }: ProfileResultCardProps) {
+  const walletSuffix = profile.wallet_suffix.slice(-4);
+
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={() => onSelect(profile.id)}
+        className="flex min-h-16 w-full items-center rounded-[1.25rem] border-2 border-transparent bg-[#91dcf3] px-3 py-2 text-left text-slate-950 transition-[border-color,transform] hover:border-[#078fe5] focus-visible:border-[#078fe5] focus-visible:outline-none active:scale-[0.99] dark:bg-[#4568e9] dark:text-white dark:hover:border-white/75 dark:focus-visible:border-white"
+      >
+        <div className="flex min-w-0 flex-1 items-center gap-3 pr-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white text-slate-900 dark:bg-[#424652] dark:text-white">
+            {profile.profile_picture_url ? (
+              <img
+                src={profile.profile_picture_url}
+                alt=""
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <UserRound className="h-6 w-6" aria-hidden="true" />
+            )}
+          </div>
+
+          <div className="min-w-0 flex-1 leading-tight">
+            <p className="truncate text-base font-bold">{profile.display_name}</p>
+            {profile.unique_name && (
+              <p className="truncate text-xs font-semibold">
+                {profile.unique_name}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <span
+          className="h-12 w-px shrink-0 bg-slate-800/80 dark:bg-white/85"
+          aria-hidden="true"
+        />
+
+        <div className="flex min-w-[6.75rem] shrink-0 items-center justify-center gap-1.5 pl-3">
+          <WalletCards className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+          <span className="font-mono text-base font-bold">#...{walletSuffix}</span>
+        </div>
+      </button>
+    </li>
+  );
+}
 
 export function ProfileSearch({ open, onClose }: ProfileSearchProps) {
   const router = useRouter();
@@ -97,6 +149,8 @@ export function ProfileSearch({ open, onClose }: ProfileSearchProps) {
 
   const cleanQuery = query.trim();
   const showResultsPanel = cleanQuery.length >= 2;
+  const exactResults = results.filter((profile) => profile.match_score === 1);
+  const similarResults = results.filter((profile) => profile.match_score !== 1);
 
   const selectProfile = (profileId: string) => {
     onClose();
@@ -117,8 +171,8 @@ export function ProfileSearch({ open, onClose }: ProfileSearchProps) {
         aria-label="Close profile search"
       />
 
-      <div className="relative z-10 w-full max-w-xl -translate-y-[8vh]">
-        <div className="relative flex h-14 items-center rounded-full border border-black/10 bg-[#91dcf3] px-5 text-slate-950 shadow-xl shadow-slate-500/15 dark:border-white/15 dark:bg-[#4568e9] dark:text-white dark:shadow-black/25">
+      <div className="relative z-10 w-full max-w-[20.25rem] -translate-y-[8vh]">
+        <div className="relative flex h-11 items-center rounded-full border border-black/10 bg-[#91dcf3] px-4 text-slate-950 shadow-xl shadow-slate-500/15 dark:border-white/15 dark:bg-[#4568e9] dark:text-white dark:shadow-black/25">
           {loading ? (
             <LoaderCircle
               className="h-5 w-5 shrink-0 animate-spin"
@@ -140,7 +194,7 @@ export function ProfileSearch({ open, onClose }: ProfileSearchProps) {
             maxLength={64}
             autoComplete="off"
             autoFocus
-            className="h-full min-w-0 flex-1 bg-transparent px-3 text-base font-semibold outline-none placeholder:text-slate-700/75 dark:placeholder:text-white/80"
+            className="h-full min-w-0 flex-1 bg-transparent px-2.5 text-sm font-semibold outline-none placeholder:text-slate-700/75 dark:placeholder:text-white/80"
           />
 
           <button
@@ -154,11 +208,13 @@ export function ProfileSearch({ open, onClose }: ProfileSearchProps) {
         </div>
 
         {showResultsPanel && (
-          <div className="mt-2 max-h-[min(24rem,55vh)] overflow-y-auto rounded-[1.6rem] border border-black/10 bg-[#91dcf3] p-2 text-slate-950 shadow-2xl shadow-slate-500/20 dark:border-white/15 dark:bg-[#4568e9] dark:text-white dark:shadow-black/35">
+          <div className="mt-2 max-h-[min(28rem,60vh)] overflow-y-auto text-slate-950 dark:text-white">
             {error ? (
-              <p className="px-4 py-5 text-sm font-medium">{error}</p>
+              <p className="rounded-[1.25rem] bg-[#91dcf3] px-4 py-5 text-sm font-medium shadow-lg dark:bg-[#4568e9]">
+                {error}
+              </p>
             ) : !loading && results.length === 0 ? (
-              <div className="px-4 py-5">
+              <div className="rounded-[1.25rem] bg-[#91dcf3] px-4 py-5 shadow-lg dark:bg-[#4568e9]">
                 <p className="font-bold">No profiles found</p>
                 <p className="mt-1 text-sm text-slate-700 dark:text-white/75">
                   Try another spelling, username, or the wallet&apos;s last four
@@ -166,44 +222,39 @@ export function ProfileSearch({ open, onClose }: ProfileSearchProps) {
                 </p>
               </div>
             ) : (
-              <ul aria-label="Profile search results">
-                {results.map((profile) => (
-                  <li key={profile.id}>
-                    <button
-                      type="button"
-                      onClick={() => selectProfile(profile.id)}
-                      className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors hover:bg-white/45 focus-visible:bg-white/45 focus-visible:outline-none dark:hover:bg-white/15 dark:focus-visible:bg-white/15"
+              <div className="space-y-2">
+                {exactResults.length > 0 && (
+                  <ul className="space-y-2" aria-label="Exact profile matches">
+                    {exactResults.map((profile) => (
+                      <ProfileResultCard
+                        key={profile.id}
+                        profile={profile}
+                        onSelect={selectProfile}
+                      />
+                    ))}
+                  </ul>
+                )}
+
+                {similarResults.length > 0 && (
+                  <section aria-labelledby="similar-profile-results">
+                    <h2
+                      id="similar-profile-results"
+                      className="mb-1 px-1 text-[0.65rem] font-bold"
                     >
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/70 text-slate-700 dark:bg-white/15 dark:text-white">
-                        {profile.profile_picture_url ? (
-                          <img
-                            src={profile.profile_picture_url}
-                            alt=""
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <UserRound className="h-5 w-5" aria-hidden="true" />
-                        )}
-                      </div>
-
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate font-bold">
-                          {profile.unique_name || profile.display_name}
-                        </p>
-                        {profile.unique_name && (
-                          <p className="truncate text-sm text-slate-700 dark:text-white/75">
-                            {profile.display_name}
-                          </p>
-                        )}
-                      </div>
-
-                      <span className="shrink-0 font-mono text-xs font-bold text-slate-700 dark:text-white/75">
-                        ••••{profile.wallet_suffix}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+                      Similar Results
+                    </h2>
+                    <ul className="space-y-2">
+                      {similarResults.map((profile) => (
+                        <ProfileResultCard
+                          key={profile.id}
+                          profile={profile}
+                          onSelect={selectProfile}
+                        />
+                      ))}
+                    </ul>
+                  </section>
+                )}
+              </div>
             )}
           </div>
         )}

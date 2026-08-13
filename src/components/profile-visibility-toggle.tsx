@@ -33,17 +33,17 @@ export function ProfileVisibilityToggle({
         title={visible ? "Profile visible" : "Profile hidden"}
         disabled={saving}
         onClick={onToggle}
-        className={`relative h-7 w-12 shrink-0 rounded-full border shadow-inner transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/40 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-50 ${
+        className={`relative h-7 w-12 shrink-0 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/40 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-50 ${
           visible
-            ? "border-black/10 bg-white/80 dark:border-white/20 dark:bg-white/90"
+            ? "border-[#0c6cee] bg-[#0c6cee] dark:border-[#a4dff5] dark:bg-[#a4dff5]"
             : "border-black/10 bg-black/20 dark:border-white/15 dark:bg-white/20"
         }`}
       >
         <span
           aria-hidden="true"
-          className={`absolute left-[3px] top-[3px] h-5 w-5 rounded-full shadow-sm transition-all ${
+          className={`absolute left-[3px] top-[3px] h-5 w-5 rounded-full transition-all ${
             visible
-              ? "translate-x-5 bg-[#404246]"
+              ? "translate-x-5 bg-white dark:bg-[#404246]"
               : "translate-x-0 bg-white dark:bg-white/90"
           }`}
         />

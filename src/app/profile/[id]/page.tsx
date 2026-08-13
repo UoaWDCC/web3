@@ -73,8 +73,8 @@ export default function PublicProfilePage() {
 
   return (
     <div className="min-h-screen w-screen flex flex-col gap-16 justify-center items-center bg-[linear-gradient(180deg,_#AFDCF1_0%,_#ADD8F2_27%,_#D3B7F3_100%)] px-4 md:px-0 pt-32 pb-24 text-foreground dark:bg-[linear-gradient(180deg,_#CAC1F7_0%,_#A8A1CA_21%,_#7B7890_59%,_#5C5A66_86%,_#6B6A7A_100%)] dark:text-white">
-      <div className="relative bg-white/80 w-full max-w-[90vw] lg:w-[80vw] lg:max-w-[90vw] p-8 lg:p-15 rounded-2xl overflow-visible shadow-lg dark:bg-[#404246]/85 dark:shadow-black/20">
-        <div className="flex flex-col items-center lg:items-start text-center lg:text-left gap-6 lg:gap-8">
+      <div className="relative bg-white/80 w-full max-w-[90vw] lg:w-[80vw] lg:max-w-[90vw] lg:h-[280px] p-8 lg:p-15 rounded-2xl overflow-hidden shadow-lg dark:bg-[#404246]/85 dark:shadow-black/20">
+        <div className="flex flex-col items-center lg:min-h-[160px] lg:items-start lg:justify-center text-center lg:text-left gap-6 lg:gap-8">
           <div className="relative w-32 h-32 rounded-full bg-white flex items-center justify-center overflow-hidden lg:absolute lg:-left--16 lg:top-1/2 lg:-translate-y-1/2 lg:w-[280px] lg:h-[280px] dark:bg-[#2f3136]">
             {profile.profile_picture_url ? (
               <img
