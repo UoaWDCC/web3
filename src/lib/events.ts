@@ -12,6 +12,9 @@ export type ClubEvent = {
   capacity: number | null;
   event_url: string | null;
   event_path: string | null;
+  // Used by the admin check-in flow; not surfaced on the public events page.
+  check_in_open_time?: string | null;
+  check_in_close_time?: string | null;
 };
 
 export type EventStatus = "open" | "full" | "closed";
