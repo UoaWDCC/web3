@@ -72,6 +72,8 @@ export async function PUT(req: NextRequest) {
       check_in_close_time,
       event_path,
       event_url,
+      location,
+      capacity,
     } = body || {};
 
     if (!title || !start_time || !end_time) {
@@ -111,6 +113,8 @@ export async function PUT(req: NextRequest) {
       };
       if (event_path !== undefined) updatePayload.event_path = event_path;
       if (event_url !== undefined) updatePayload.event_url = event_url;
+      if (location !== undefined) updatePayload.location = location;
+      if (capacity !== undefined) updatePayload.capacity = capacity;
 
       const { data, error } = await supabase
         .from("events")
@@ -136,6 +140,8 @@ export async function PUT(req: NextRequest) {
     };
     if (event_path !== undefined) insertPayload.event_path = event_path;
     if (event_url !== undefined) insertPayload.event_url = event_url;
+    if (location !== undefined) insertPayload.location = location;
+    if (capacity !== undefined) insertPayload.capacity = capacity;
 
     const { data, error } = await supabase
       .from("events")

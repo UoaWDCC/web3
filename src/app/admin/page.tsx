@@ -29,6 +29,8 @@ type AdminEvent = {
   check_in_close_time?: string;
   event_url?: string | null;
   event_path?: string | null;
+  location?: string | null;
+  capacity?: number | null;
 };
 
 type AdminHeaders = Record<string, string>;
@@ -47,6 +49,8 @@ export default function AdminPage() {
   // Event form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [location, setLocation] = useState("");
+  const [capacity, setCapacity] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [checkInOpen, setCheckInOpen] = useState("");
@@ -203,6 +207,8 @@ export default function AdminPage() {
       const payload: Record<string, unknown> = {
         title,
         description,
+        location: location.trim() || null,
+        capacity: capacity.trim() ? Number(capacity) : null,
         start_time: startTime ? new Date(startTime).toISOString() : null,
         end_time: endTime ? new Date(endTime).toISOString() : null,
         event_url: uploadedImage?.event_url ?? imageUrl,
@@ -237,6 +243,8 @@ export default function AdminPage() {
       // clear form and refresh
       setTitle("");
       setDescription("");
+      setLocation("");
+      setCapacity("");
       setStartTime("");
       setEndTime("");
       setCheckInOpen("");
@@ -486,6 +494,28 @@ export default function AdminPage() {
                 />
 
                 <label className="block text-sm font-medium mt-4">
+                  Location
+                </label>
+                <input
+                  className="mt-1 w-full p-2 rounded-md border"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="Sir Owen G Glenn Building"
+                />
+
+                <label className="block text-sm font-medium mt-4">
+                  Capacity
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  className="mt-1 w-full p-2 rounded-md border"
+                  value={capacity}
+                  onChange={(e) => setCapacity(e.target.value)}
+                  placeholder="Leave blank for unlimited"
+                />
+
+                <label className="block text-sm font-medium mt-4">
                   Assigned Emails (comma separated)
                 </label>
                 <input
@@ -585,6 +615,8 @@ export default function AdminPage() {
                     setShowEventForm(false);
                     setTitle("");
                     setDescription("");
+                    setLocation("");
+                    setCapacity("");
                     setStartTime("");
                     setEndTime("");
                     setCheckInOpen("");
@@ -636,6 +668,8 @@ export default function AdminPage() {
                       setShowEventForm(true);
                       setTitle(ev.title || "");
                       setDescription(ev.description || "");
+                      setLocation(ev.location || "");
+                      setCapacity(ev.capacity != null ? String(ev.capacity) : "");
                       setStartTime(
                         ev.start_time
                           ? new Date(ev.start_time).toISOString().slice(0, 16)
