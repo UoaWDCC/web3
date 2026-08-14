@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPrisma } from "@/lib/prisma";
-import { deleteName } from "@/lib/namestone";
-import { verifyMessage } from "viem";
+import { EventService } from "@/services/event-service";
 import { isAllowedAdminAddress } from "@/lib/admin-auth";
+import { verifyMessage } from "viem";
 
 async function verifyAdminAuth(req: NextRequest) {
   const address = req.headers.get("x-admin-address")?.toLowerCase();
@@ -11,14 +10,17 @@ async function verifyAdminAuth(req: NextRequest) {
 
   if (!address || !signature || !timestamp || !isAllowedAdminAddress(address))
     return false;
-  if (Date.now() - parseInt(timestamp) > 5 * 60 * 1000) return false;
+
+  const now = Date.now();
+  if (now - parseInt(timestamp) > 5 * 60 * 1000) return false;
 
   try {
-    return await verifyMessage({
+    const valid = await verifyMessage({
       address: address as `0x${string}`,
       message: `Admin Auth ${timestamp}`,
       signature: signature as `0x${string}`,
     });
+    return valid;
   } catch {
     return false;
   }
@@ -30,27 +32,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
-    const prisma = getPrisma();
-    const { name, claimId } = await req.json();
+    const formData = await req.formData();
+    const file = formData.get("image") as File | null;
 
-    // Delete from NameStone
-    await deleteName({
-      domain: "web3uoa.eth",
-      name,
-    });
-
-    if (claimId) {
-      await prisma.claimRequest.update({
-        where: { id: claimId },
-        data: { status: "REJECTED" }, // or we could delete the record
-      });
+    if (!file) {
+      return NextResponse.json(
+        { error: "Missing image file" },
+        { status: 400 },
+      );
     }
 
-    return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error(error);
+    const uploaded = await EventService.uploadEventImage(file);
+    return NextResponse.json({
+      event_path: uploaded.imagePath,
+      event_url: uploaded.imageUrl,
+    });
+  } catch (err: any) {
     return NextResponse.json(
-      { error: error.message || "Failed to revoke" },
+      { error: err.message || "Image upload failed" },
       { status: 500 },
     );
   }
