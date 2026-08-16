@@ -4,8 +4,10 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { useWallet } from "@/hooks/use-wallet";
 import { WalletButton } from "@/components/wallet-button";
-import { Copy, CheckCheck, PenTool } from "lucide-react";
+import { CheckCheck, Copy, PenTool } from "lucide-react";
 import { RegistrationService } from "@/services/registrations/registrations-service";
+import { useSignMessage } from "wagmi";
+import { ProfileVisibilityToggle } from "@/components/profile-visibility-toggle";
 import { getSupabase } from "@/services/supabase";
 
 const getErrorMessage = (error: unknown) => {
@@ -41,6 +43,7 @@ const getEventImage = (eventName: string) => {
 
 export default function ProfilePage() {
   const { address, isConnected, disconnect, mounted } = useWallet();
+  const { signMessageAsync } = useSignMessage();
   const [copied, setCopied] = useState(false);
   const [displayName, setDisplayName] = useState("Name");
   const [isEditingName, setIsEditingName] = useState(false);
@@ -54,6 +57,8 @@ export default function ProfilePage() {
   const [walletRegistered, setWalletRegistered] = useState(false);
   const [walletChecking, setWalletChecking] = useState(true);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [profileVisible, setProfileVisible] = useState(true);
+  const [visibilitySaving, setVisibilitySaving] = useState(false);
 
   const copyAddress = () => {
     if (!address) return;
@@ -142,6 +147,7 @@ export default function ProfilePage() {
     const loadProfile = async () => {
       if (!address) {
         setWalletRegistered(false);
+        setProfileVisible(true);
         setWalletChecking(false);
         setProfileLoading(false);
         return;
@@ -163,6 +169,7 @@ export default function ProfilePage() {
           setProfileImage(null);
           setBadges([]);
           setEventsAttended([]);
+          setProfileVisible(true);
           setStatusMessage("This wallet is not linked yet.");
           return;
         }
@@ -193,6 +200,7 @@ export default function ProfilePage() {
           setProfileImage(null);
           setBadges([]);
           setEventsAttended([]);
+          setProfileVisible(true);
           setStatusMessage("No profile data found for this wallet.");
         }
       } catch (error) {
@@ -250,6 +258,54 @@ export default function ProfilePage() {
 
       console.error("Failed to save display name", error);
       setStatusMessage(`Unable to save display name: ${message}`);
+    }
+  };
+
+  const handleVisibilityToggle = async () => {
+    if (!address || visibilitySaving) {
+      return;
+    }
+
+    const nextVisible = !profileVisible;
+    setVisibilitySaving(true);
+    setStatusMessage(
+      `Confirm in your wallet to ${nextVisible ? "show" : "hide"} your profile. This signature is free.`,
+    );
+
+    try {
+      const challenge =
+        await RegistrationService.requestProfileVisibilityChallenge({
+          walletAddress: address,
+          visible: nextVisible,
+        });
+      const signature = await signMessageAsync({
+        message: challenge.message,
+      });
+      const result = await RegistrationService.updateProfileVisibility({
+        walletAddress: address,
+        visible: nextVisible,
+        challenge,
+        signature,
+      });
+
+      setProfileVisible(result.visible);
+      setStatusMessage(
+        result.visible
+          ? "Your profile is visible in member search."
+          : "Your profile is hidden and can no longer be found in member search.",
+      );
+    } catch (error) {
+      const message = getErrorMessage(error);
+      const rejected = /reject|denied|cancel/i.test(message);
+
+      console.error("Failed to update profile visibility", error);
+      setStatusMessage(
+        rejected
+          ? "Visibility was not changed because the signature was cancelled."
+          : `Unable to change profile visibility: ${message}`,
+      );
+    } finally {
+      setVisibilitySaving(false);
     }
   };
 
@@ -377,6 +433,14 @@ export default function ProfilePage() {
                 {statusMessage}
               </div>
             ) : null}
+
+            <div className="mt-6 flex justify-center md:justify-start">
+              <ProfileVisibilityToggle
+                visible={profileVisible}
+                saving={visibilitySaving}
+                onToggle={handleVisibilityToggle}
+              />
+            </div>
           </div>
         </div>
       </div>
