@@ -12,6 +12,7 @@ import {
 type ProfileSearchProps = {
   open: boolean;
   onClose: () => void;
+  excludedWalletAddress?: string;
 };
 
 type ProfileResultCardProps = {
@@ -66,7 +67,11 @@ function ProfileResultCard({ profile, onSelect }: ProfileResultCardProps) {
   );
 }
 
-export function ProfileSearch({ open, onClose }: ProfileSearchProps) {
+export function ProfileSearch({
+  open,
+  onClose,
+  excludedWalletAddress,
+}: ProfileSearchProps) {
   const router = useRouter();
   const requestId = useRef(0);
   const [mounted, setMounted] = useState(false);
@@ -121,7 +126,11 @@ export function ProfileSearch({ open, onClose }: ProfileSearchProps) {
 
     const timeout = window.setTimeout(async () => {
       try {
-        const matches = await PublicProfilesService.search(cleanQuery);
+        const matches = await PublicProfilesService.search(
+          cleanQuery,
+          8,
+          excludedWalletAddress,
+        );
 
         if (requestId.current === currentRequest) {
           setResults(matches);
@@ -141,7 +150,7 @@ export function ProfileSearch({ open, onClose }: ProfileSearchProps) {
     }, 250);
 
     return () => window.clearTimeout(timeout);
-  }, [query]);
+  }, [excludedWalletAddress, query]);
 
   if (!mounted || !open) {
     return null;

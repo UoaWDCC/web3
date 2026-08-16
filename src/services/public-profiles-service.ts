@@ -35,8 +35,10 @@ export const PublicProfilesService = {
   search: async (
     query: string,
     maxResults = 8,
+    excludedWalletAddress?: string,
   ): Promise<PublicProfileSearchResult[]> => {
     const cleanQuery = query.trim().replace(/\s+/g, " ");
+    const cleanExcludedWallet = excludedWalletAddress?.trim().toLowerCase();
 
     if (cleanQuery.length < 2 || cleanQuery.length > 64) {
       return [];
@@ -46,6 +48,7 @@ export const PublicProfilesService = {
     const { data, error } = await supabase.rpc("search_public_profiles", {
       search_query: cleanQuery,
       max_results: Math.min(Math.max(maxResults, 1), 8),
+      excluded_wallet: cleanExcludedWallet || null,
     });
 
     if (error) {

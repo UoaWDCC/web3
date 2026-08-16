@@ -249,7 +249,11 @@ export function Navbar() {
       )}
       </nav>
 
-      <ProfileSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
+      <ProfileSearch
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        excludedWalletAddress={address}
+      />
     </>
   );
 }
