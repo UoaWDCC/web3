@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useWallet } from "@/hooks/use-wallet";
 import { WalletButton } from "@/components/wallet-button";
@@ -8,6 +8,8 @@ import { CheckCheck, Copy, PenTool } from "lucide-react";
 import { RegistrationService } from "@/services/registrations/registrations-service";
 import { useSignMessage } from "wagmi";
 import { ProfileVisibilityToggle } from "@/components/profile-visibility-toggle";
+import { IoQrCode } from "react-icons/io5";
+import QrCode from "qrcode";
 import { getSupabase } from "@/services/supabase";
 
 const getErrorMessage = (error: unknown) => {
@@ -51,7 +53,7 @@ export default function ProfilePage() {
   const [badges, setBadges] = useState<string[]>([]);
   const [eventsAttended, setEventsAttended] = useState<string[]>([]);
   const [eventDetails, setEventDetails] = useState<
-    Record<string, { eventUrl: string | null }>
+    Record<string, { title: string; eventUrl: string | null }>
   >({});
   const [profileLoading, setProfileLoading] = useState(true);
   const [walletRegistered, setWalletRegistered] = useState(false);
@@ -59,6 +61,91 @@ export default function ProfilePage() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [profileVisible, setProfileVisible] = useState(true);
   const [visibilitySaving, setVisibilitySaving] = useState(false);
+
+  // Personal check-in QR, shown in a hover card on the profile card.
+  const [qrHovered, setQrHovered] = useState(false);
+  const [qrPayload, setQrPayload] = useState<string | null>(null);
+  const [qrImage, setQrImage] = useState<string | null>(null);
+  const [qrLoading, setQrLoading] = useState(false);
+  const [qrError, setQrError] = useState<string | null>(null);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const qrContainerRef = useRef<HTMLDivElement>(null);
+
+  // Theme is toggled elsewhere by adding/removing "dark" on <html>, so we
+  // just watch for that instead of pulling in a theme context here.
+  useEffect(() => {
+    const html = document.documentElement;
+    setIsDarkMode(html.classList.contains("dark"));
+
+    const observer = new MutationObserver(() => {
+      setIsDarkMode(html.classList.contains("dark"));
+    });
+    observer.observe(html, { attributes: true, attributeFilter: ["class"] });
+
+    return () => observer.disconnect();
+  }, []);
+
+  // Re-render the QR whenever the payload or theme changes, so it stays
+  // black-on-white in light mode and white-on-transparent in dark mode.
+  useEffect(() => {
+    if (!qrPayload) return;
+
+    QrCode.toDataURL(qrPayload, {
+      errorCorrectionLevel: "H",
+      margin: 2,
+      color: { dark: "#000000", light: "#FFFFFF" },
+    })
+      .then(setQrImage)
+      .catch((error) => setQrError(getErrorMessage(error)));
+  }, [qrPayload]);
+
+  // Closes the qr code popup when tapping outside, since it can be opened by tapping on
+  // touch devices where there's no mouseleave to fall back on.
+  useEffect(() => {
+    if (!qrHovered) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (
+        qrContainerRef.current &&
+        !qrContainerRef.current.contains(event.target as Node)
+      ) {
+        setQrHovered(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [qrHovered]);
+
+  const loadQr = async () => {
+    if (!address || qrPayload || qrLoading) return;
+
+    setQrError(null);
+    setQrLoading(true);
+    try {
+      const timestamp = Date.now().toString();
+      const signature = await signMessageAsync({
+        message: `Wallet Auth ${timestamp}`,
+      });
+
+      const res = await fetch("/api/user/qr", {
+        headers: {
+          "x-wallet-address": address,
+          "x-wallet-signature": signature,
+          "x-wallet-timestamp": timestamp,
+        },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to load QR code");
+
+      setQrPayload(data.qrPayload);
+    } catch (error) {
+      console.error("Failed to load personal QR code", error);
+      setQrError(getErrorMessage(error));
+    } finally {
+      setQrLoading(false);
+    }
+  };
 
   const copyAddress = () => {
     if (!address) return;
@@ -115,19 +202,23 @@ export default function ProfilePage() {
         const supabase = getSupabase();
         const { data, error } = await supabase
           .from("events")
-          .select("title,event_url")
-          .in("title", attended);
+          .select("id,title,event_url")
+          .in("id", attended);
 
         if (error) {
-          console.error("Failed to load attended event images", error);
+          console.error("Failed to load attended event details", error);
           return;
         }
 
         if (!cancelled && data) {
           const details = data.reduce(
-            (acc: Record<string, { eventUrl: string | null }>, event) => {
-              if (event.title) {
-                acc[normalizeEventName(event.title)] = {
+            (
+              acc: Record<string, { title: string; eventUrl: string | null }>,
+              event,
+            ) => {
+              if (event.id) {
+                acc[event.id] = {
+                  title: event.title || event.id,
                   eventUrl: event.event_url || null,
                 };
               }
@@ -350,6 +441,48 @@ export default function ProfilePage() {
     <div className="min-h-screen w-screen flex flex-col gap-16 justify-center items-center bg-[linear-gradient(180deg,_#AFDCF1_0%,_#ADD8F2_27%,_#D3B7F3_100%)] px-4 md:px-0 pt-32 pb-24 text-foreground dark:bg-[linear-gradient(180deg,_#CAC1F7_0%,_#A8A1CA_21%,_#7B7890_59%,_#5C5A66_86%,_#6B6A7A_100%)] dark:text-white">
       {/* Profile Card */}
       <div className="relative bg-white/80 w-full max-w-[90vw] lg:w-[80vw] lg:max-w-[90vw] p-8 lg:p-15 rounded-2xl overflow-visible shadow-lg dark:bg-[#404246]/85 dark:shadow-black/20">
+        <div
+          ref={qrContainerRef}
+          className="absolute top-4 right-4 z-40"
+          onMouseEnter={() => {
+            setQrHovered(true);
+            loadQr();
+          }}
+          onMouseLeave={() => setQrHovered(false)}
+        >
+          <button
+            onClick={() => {
+              setQrHovered((open) => !open);
+              loadQr();
+            }}
+            className="text-muted-foreground hover:text-primary transition-colors dark:text-white dark:hover:text-[#A3DEF4]"
+            aria-label="Show my check-in QR code"
+          >
+            <IoQrCode className="w-6 h-6" />
+          </button>
+          {qrHovered && (
+            <div className="absolute right-0 top-full mt-2 bg-white dark:bg-[#2f3136] rounded-2xl p-5 shadow-xl w-64 flex flex-col items-center gap-3">
+              <p className="text-sm font-bold text-center">
+                Scan QR code for attendance
+              </p>
+              <div className="w-48 h-48 border-2 border-foreground/80 dark:border-white/60 rounded-xl flex items-center justify-center overflow-hidden">
+                {qrLoading ? (
+                  <p className="text-xs text-muted-foreground dark:text-white/70 text-center px-2">
+                    Loading…
+                  </p>
+                ) : qrError ? (
+                  <p className="text-xs text-red-500 text-center px-2">{qrError}</p>
+                ) : qrImage ? (
+                  <img
+                    src={qrImage}
+                    alt="Your personal check-in QR code"
+                    className="w-full h-full object-contain"
+                  />
+                ) : null}
+              </div>
+            </div>
+          )}
+        </div>
         <div className="flex flex-col items-center lg:items-start text-center lg:text-left gap-6 lg:gap-8">
           <div className="relative w-32 h-32 rounded-full bg-white flex items-center justify-center overflow-hidden lg:absolute lg:-left--16 lg:top-1/2 lg:-translate-y-1/2 lg:w-[280px] lg:h-[280px] dark:bg-[#2f3136]">
             {profileImage ? (
@@ -487,9 +620,10 @@ export default function ProfilePage() {
               </p>
             ) : eventsAttended.length > 0 ? (
               <div className="space-y-4">
-                {eventsAttended.map((eventName, index) => {
-                  const normalizedName = normalizeEventName(eventName);
-                  const eventUrl = eventDetails[normalizedName]?.eventUrl;
+                {eventsAttended.map((eventId, index) => {
+                  const eventDetail = eventDetails[eventId];
+                  const eventName = eventDetail?.title || eventId;
+                  const eventUrl = eventDetail?.eventUrl;
                   const eventImage = eventUrl ?? getEventImage(eventName);
                   return (
                     <div
@@ -530,6 +664,7 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
     </div>
   );
 }
