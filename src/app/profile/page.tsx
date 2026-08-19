@@ -52,7 +52,7 @@ export default function ProfilePage() {
   const [badges, setBadges] = useState<string[]>([]);
   const [eventsAttended, setEventsAttended] = useState<string[]>([]);
   const [eventDetails, setEventDetails] = useState<
-    Record<string, { eventUrl: string | null }>
+    Record<string, { title: string; eventUrl: string | null }>
   >({});
   const [profileLoading, setProfileLoading] = useState(true);
   const [walletRegistered, setWalletRegistered] = useState(false);
@@ -199,19 +199,23 @@ export default function ProfilePage() {
         const supabase = getSupabase();
         const { data, error } = await supabase
           .from("events")
-          .select("title,event_url")
-          .in("title", attended);
+          .select("id,title,event_url")
+          .in("id", attended);
 
         if (error) {
-          console.error("Failed to load attended event images", error);
+          console.error("Failed to load attended event details", error);
           return;
         }
 
         if (!cancelled && data) {
           const details = data.reduce(
-            (acc: Record<string, { eventUrl: string | null }>, event) => {
-              if (event.title) {
-                acc[normalizeEventName(event.title)] = {
+            (
+              acc: Record<string, { title: string; eventUrl: string | null }>,
+              event,
+            ) => {
+              if (event.id) {
+                acc[event.id] = {
+                  title: event.title || event.id,
                   eventUrl: event.event_url || null,
                 };
               }
@@ -554,9 +558,10 @@ export default function ProfilePage() {
               </p>
             ) : eventsAttended.length > 0 ? (
               <div className="space-y-4">
-                {eventsAttended.map((eventName, index) => {
-                  const normalizedName = normalizeEventName(eventName);
-                  const eventUrl = eventDetails[normalizedName]?.eventUrl;
+                {eventsAttended.map((eventId, index) => {
+                  const eventDetail = eventDetails[eventId];
+                  const eventName = eventDetail?.title || eventId;
+                  const eventUrl = eventDetail?.eventUrl;
                   const eventImage = eventUrl ?? getEventImage(eventName);
                   return (
                     <div
