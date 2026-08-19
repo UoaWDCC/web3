@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { useWallet } from "@/hooks/use-wallet";
 import { useSignMessage } from "wagmi";
 import { WalletButton } from "@/components/wallet-button";
@@ -8,6 +9,7 @@ import { Copy, CheckCheck, PenTool } from "lucide-react";
 import { RegistrationService } from "@/services/registrations/registrations-service";
 import { IoQrCode } from "react-icons/io5";
 import QrCode from "qrcode";
+import { getSupabase } from "@/services/supabase";
 
 const getErrorMessage = (error: unknown) => {
   if (error instanceof Error) {
@@ -21,6 +23,25 @@ const getErrorMessage = (error: unknown) => {
   return String(error);
 };
 
+const EVENT_THUMBNAIL_MAP: Record<string, string> = {
+  "launch night": "/images/Launchnight1.jpg",
+  "industry night": "/images/Industrynight1.jpg",
+  govdojo: "/images/GovDojo1.jpg",
+};
+
+const normalizeEventName = (eventName: string) =>
+  eventName.trim().toLowerCase();
+
+const getEventImage = (eventName: string) => {
+  const normalized = normalizeEventName(eventName);
+  if (normalized.includes("launch")) return EVENT_THUMBNAIL_MAP["launch night"];
+  if (normalized.includes("industry"))
+    return EVENT_THUMBNAIL_MAP["industry night"];
+  if (normalized.includes("govdojo") || normalized.includes("gov"))
+    return EVENT_THUMBNAIL_MAP.govdojo;
+  return "/images/Launchnight1.jpg";
+};
+
 export default function ProfilePage() {
   const { address, isConnected, disconnect, mounted } = useWallet();
   const { signMessageAsync } = useSignMessage();
@@ -30,6 +51,9 @@ export default function ProfilePage() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [badges, setBadges] = useState<string[]>([]);
   const [eventsAttended, setEventsAttended] = useState<string[]>([]);
+  const [eventDetails, setEventDetails] = useState<
+    Record<string, { eventUrl: string | null }>
+  >({});
   const [profileLoading, setProfileLoading] = useState(true);
   const [walletRegistered, setWalletRegistered] = useState(false);
   const [walletChecking, setWalletChecking] = useState(true);
@@ -168,6 +192,42 @@ export default function ProfilePage() {
   useEffect(() => {
     let cancelled = false;
 
+    const fetchAttendedEventDetails = async (attended: string[]) => {
+      if (attended.length === 0) return;
+
+      try {
+        const supabase = getSupabase();
+        const { data, error } = await supabase
+          .from("events")
+          .select("title,event_url")
+          .in("title", attended);
+
+        if (error) {
+          console.error("Failed to load attended event images", error);
+          return;
+        }
+
+        if (!cancelled && data) {
+          const details = data.reduce(
+            (acc: Record<string, { eventUrl: string | null }>, event) => {
+              if (event.title) {
+                acc[normalizeEventName(event.title)] = {
+                  eventUrl: event.event_url || null,
+                };
+              }
+              return acc;
+            },
+            {},
+          );
+          setEventDetails(details);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Failed to load attended event images", error);
+        }
+      }
+    };
+
     const loadProfile = async () => {
       if (!address) {
         setWalletRegistered(false);
@@ -181,9 +241,8 @@ export default function ProfilePage() {
       setStatusMessage(null);
 
       try {
-        const isRegistered = await RegistrationService.isWalletRegistered(
-          address,
-        );
+        const isRegistered =
+          await RegistrationService.isWalletRegistered(address);
 
         if (cancelled) return;
 
@@ -212,10 +271,12 @@ export default function ProfilePage() {
                 .join(" ")
                 .trim();
 
+          const attended = registration.events_attended || [];
           setDisplayName(displayNameFallback || "Name");
           setProfileImage(registration.profile_picture_url || null);
           setBadges(registration.badges || []);
-          setEventsAttended(registration.events_attended || []);
+          setEventsAttended(attended);
+          await fetchAttendedEventDetails(attended);
         } else {
           setDisplayName("Name");
           setProfileImage(null);
@@ -493,14 +554,40 @@ export default function ProfilePage() {
               </p>
             ) : eventsAttended.length > 0 ? (
               <div className="space-y-4">
-                {eventsAttended.map((eventName, index) => (
-                  <div
-                    key={`${eventName}-${index}`}
-                    className="rounded-3xl bg-primary/10 px-4 py-4 sm:px-6 sm:py-5 dark:bg-white/10"
-                  >
-                    <p className="font-semibold text-lg">{eventName}</p>
-                  </div>
-                ))}
+                {eventsAttended.map((eventName, index) => {
+                  const normalizedName = normalizeEventName(eventName);
+                  const eventUrl = eventDetails[normalizedName]?.eventUrl;
+                  const eventImage = eventUrl ?? getEventImage(eventName);
+                  return (
+                    <div
+                      key={`${eventName}-${index}`}
+                      className="overflow-hidden rounded-3xl border border-primary/20 bg-white/95 shadow-sm dark:border-white/10 dark:bg-slate-900"
+                    >
+                      <div className="relative aspect-[16/9] w-full">
+                        {eventUrl ? (
+                          <img
+                            src={eventImage}
+                            alt={eventName}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <Image
+                            src={eventImage}
+                            alt={eventName}
+                            fill
+                            sizes="(max-width: 768px) 100vw, 33vw"
+                            className="object-cover"
+                          />
+                        )}
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent px-4 py-3">
+                          <p className="text-sm font-semibold text-white">
+                            {eventName}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <p className="text-muted-foreground dark:text-white/70">
