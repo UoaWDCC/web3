@@ -98,21 +98,27 @@ export function RegistrationForm() {
    * @param {RegistrationData} data - The validated form data.
    */
   const onSubmit: SubmitHandler<RegistrationData> = async (data) => {
-    console.log("Submitting", data);
+    try {
+      const emailTaken = await RegistrationService.isEmailTaken(data.email);
+      if (emailTaken) {
+        setError("email", {
+          type: "custom",
+          message: "This email is already registered",
+        });
+        return;
+      }
 
-    const emailTaken = await RegistrationService.isEmailTaken(data.email);
-    if (emailTaken) {
-      setError("email", {
-        type: "custom",
-        message: "This email is already registered"
-      })
-      return;
+      await RegistrationService.submitRegistration(data);
+
+      reset();
+      setFinishedForm(true);
+    } catch (error) {
+      console.error("Unable to submit registration", error);
+      setError("root", {
+        type: "server",
+        message: "Unable to submit your registration. Please try again.",
+      });
     }
-
-    await RegistrationService.submitRegistration(data);
-
-    reset();
-    setFinishedForm(true);
   };
 
   return (
@@ -256,6 +262,12 @@ export function RegistrationForm() {
             placeholder="Goal Statement"
             {...register("goal_statement")}
           />
+
+          {errors.root?.message && (
+            <p className="w-full max-w-[680px] text-sm font-semibold text-red-700">
+              {errors.root.message}
+            </p>
+          )}
 
           <Button
             type="submit"
