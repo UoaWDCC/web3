@@ -83,6 +83,13 @@ export async function POST(req: NextRequest) {
     const currentEventsAttended: string[] = registration.events_attended || [];
 
     if (currentEventsAttended.includes(eventId)) {
+      console.log("[admin-checkin] scan success", {
+        eventId,
+        memberName,
+        alreadyCheckedIn: true,
+        scannedAt: new Date().toISOString(),
+      });
+
       return NextResponse.json({
         success: true,
         alreadyCheckedIn: true,
@@ -96,6 +103,15 @@ export async function POST(req: NextRequest) {
       .eq("id", registration.id);
 
     if (updateError) throw updateError;
+
+    console.log("[admin-checkin] scan success", {
+        eventId,
+        memberName,
+        alreadyCheckedIn: true,
+        scannedAt: new Date().toISOString(),
+      });
+
+    
 
     return NextResponse.json({
       success: true,

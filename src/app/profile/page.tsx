@@ -66,13 +66,11 @@ export default function ProfilePage() {
     QrCode.toDataURL(qrPayload, {
       errorCorrectionLevel: "H",
       margin: 2,
-      color: isDarkMode
-        ? { dark: "#FFFFFF", light: "#00000000" }
-        : { dark: "#000000", light: "#FFFFFF" },
+      color: { dark: "#000000", light: "#FFFFFF" },
     })
       .then(setQrImage)
       .catch((error) => setQrError(getErrorMessage(error)));
-  }, [qrPayload, isDarkMode]);
+  }, [qrPayload]);
 
   // Closes the qr code popup when tapping outside, since it can be opened by tapping on
   // touch devices where there's no mouseleave to fall back on.

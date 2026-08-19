@@ -28,6 +28,7 @@ export default function AdminPage() {
   const [scanStatus, setScanStatus] = useState<"scanning" | "result">(
     "scanning",
   );
+  const [eventsLoading, setEventsLoading] = useState(false);
   const [scanResult, setScanResult] = useState<{
     name: string;
     alreadyCheckedIn: boolean;
@@ -35,6 +36,8 @@ export default function AdminPage() {
   const [scanError, setScanError] = useState("");
   const videoRef = useRef<HTMLVideoElement>(null);
   const qrScannerRef = useRef<QrScanner | null>(null);
+  const processingScanRef = useRef(false);
+
 
   const openScanner = () => {
     if (!checkinEventId.trim()) {
@@ -48,6 +51,7 @@ export default function AdminPage() {
   };
 
   const closeScanner = () => {
+    processingScanRef.current = false;
     setScannerOpen(false);
     setScanStatus("scanning");
     setScanResult(null);
@@ -55,21 +59,31 @@ export default function AdminPage() {
   };
 
   const handleDecoded = async (qrSecret: string) => {
-    if (!authHeader) return;
+    console.log("handleDecoded called", {
+      qrSecret,
+      hasAuthHeader: Boolean(authHeader),
+      scanStatus,
+      eventId: checkinEventId,
+    });
+
+    if (!authHeader || scanStatus !== "scanning" || processingScanRef.current) {
+      return;
+    }
+
+    processingScanRef.current = true;
+    setScanError("");
     setScanStatus("result");
+
     try {
       const verify = (headers: any) =>
         fetch("/api/admin/checkin/verify", {
           method: "POST",
           headers: { ...headers, "Content-Type": "application/json" },
-          body: JSON.stringify({ qrSecret, eventId: checkinEventId.trim() }),
+          body: JSON.stringify({ qrSecret: qrSecret.trim(), eventId: checkinEventId.trim() }),
         });
 
       let res = await verify(authHeader);
 
-      // The admin signature is only valid for 5 minutes; if it expired
-      // between signing in and this scan, re-sign once and retry instead
-      // of dead-ending on "Unauthorized".
       if (res.status === 401) {
         const freshHeaders = await signAdminAuth();
         res = await verify(freshHeaders);
@@ -84,33 +98,81 @@ export default function AdminPage() {
       });
     } catch (err: any) {
       setScanError(err.message || "Check-in failed");
+    } finally {
+      processingScanRef.current = false;
     }
   };
 
   // Starts the camera whenever the modal is showing the live scan view, and
   // tears it down whenever we leave that view (result shown, or closed).
   useEffect(() => {
-    if (!scannerOpen || scanStatus !== "scanning" || !videoRef.current)
-      return;
+    if (!scannerOpen || scanStatus !== "scanning" || !videoRef.current) return;
+
+    setScanError("");
+    processingScanRef.current = false;
 
     const scanner = new QrScanner(
       videoRef.current,
-      (result) => handleDecoded(result.data),
-      { highlightScanRegion: true, highlightCodeOutline: true },
+      (result) => {
+        console.log("raw qr result", result);
+
+        const decodedText =
+          typeof result === "string"
+            ? result
+            : typeof result?.data === "string"
+              ? result.data
+              : "";
+
+        console.log("decodedText", decodedText);
+
+        if (!decodedText.trim()) {
+          return;
+        }
+
+        void handleDecoded(decodedText);
+      },
+      {
+        highlightScanRegion: true,
+        highlightCodeOutline: true,
+        preferredCamera: "environment",
+        maxScansPerSecond: 5,
+      },
     );
+
     qrScannerRef.current = scanner;
 
-    scanner.start().catch((err: any) => {
-      setScanError(err?.message || "Failed to access camera");
-    });
+    scanner
+      .start()
+      .then(async () => {
+        try {
+          const cameras = await QrScanner.listCameras(true);
+          const rearCamera =
+            cameras.find((camera) =>
+              /back|rear|environment/i.test(camera.label),
+            ) || cameras[0];
+
+          if (rearCamera?.id) {
+            await scanner.setCamera(rearCamera.id);
+          }
+
+          await videoRef.current?.play();
+        } catch (err) {
+          console.error("Camera setup failed", err);
+        }
+      })
+      .catch((err: any) => {
+        console.error("Scanner start failed", err);
+        setScanError(err?.message || "Failed to access camera");
+      });
 
     return () => {
       scanner.stop();
       scanner.destroy();
       qrScannerRef.current = null;
+      processingScanRef.current = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scannerOpen, scanStatus]);
+  }, [scannerOpen, scanStatus, checkinEventId]);
 
 
   // Signs a fresh "Admin Auth" message and stores it as the active auth
@@ -136,7 +198,7 @@ export default function AdminPage() {
   const authenticate = async () => {
     try {
       const headers = await signAdminAuth();
-      fetchData(headers);
+      await fetchData(headers);
     } catch (err: any) {
       setError(err.message || "Failed to authenticate");
     }
@@ -145,10 +207,9 @@ export default function AdminPage() {
   const fetchData = async (headers: any) => {
     setLoading(true);
     try {
-      const [claimsRes, namesRes, eventsRes] = await Promise.all([
+      const [claimsRes, namesRes] = await Promise.all([
         fetch("/api/admin/claims", { headers }),
         fetch("/api/admin/names", { headers }),
-        fetch("/api/admin/events", { headers }),
       ]);
 
       if (claimsRes.ok) {
@@ -166,14 +227,31 @@ export default function AdminPage() {
         }
       }
 
-      if (eventsRes.ok) {
-        const data = await eventsRes.json();
-        setEvents(data.events || []);
-      }
+      await fetchEvents(headers);
+
     } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchEvents = async (headers: any) => {
+    setEventsLoading(true);
+    try {
+      const res = await fetch("/api/admin/events", { headers });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to load events");
+      }
+
+      setEvents(data.events || []);
+    } catch (err: any) {
+      setEvents([]);
+      setError(err.message || "Failed to load events");
+    } finally {
+      setEventsLoading(false);
     }
   };
 
@@ -367,9 +445,16 @@ export default function AdminPage() {
           <select
             value={checkinEventId}
             onChange={(e) => setCheckinEventId(e.target.value)}
+            onFocus={() => {
+              if (authHeader) {
+                void fetchEvents(authHeader);
+              }
+            }}
             className="border border-border rounded px-2 py-1 mb-3 text-sm w-full max-w-80 block bg-white/70 dark:bg-black/20"
           >
-            <option value="">Select an event…</option>
+            <option value="">
+              {eventsLoading ? "Loading events..." : "Select an event…"}
+            </option>
             {events.map((event) => (
               <option key={event.id} value={event.id}>
                 {event.title} ({new Date(event.start_time).toLocaleDateString()})
@@ -400,7 +485,11 @@ export default function AdminPage() {
                   className="w-full aspect-square rounded-xl object-cover bg-black"
                   muted
                   playsInline
+                  autoPlay
                 />
+                <p className="text-sm text-foreground/60 text-center">
+                  Point the camera at the QR code to check in.
+                </p>
                 {scanError && (
                   <p className="text-red-500 text-sm">{scanError}</p>
                 )}
@@ -431,6 +520,7 @@ export default function AdminPage() {
                 )}
                 <Button
                   onClick={() => {
+                    processingScanRef.current = false;
                     setScanResult(null);
                     setScanError("");
                     setScanStatus("scanning");
