@@ -3,10 +3,19 @@ import { randomBytes } from "crypto";
 import { verifyWalletAuth } from "@/lib/wallet-auth";
 import { getSupabaseAdmin } from "@/services/supabase-admin";
 
-async function resolveProfileByWallet(
+type Registration = {
+  id: number;
+};
+
+type QrCredential = {
+  registration_id: number;
+  qr_secret: string;
+};
+
+async function resolveRegistrationByWallet(
   supabase: ReturnType<typeof getSupabaseAdmin>,
   walletAddress: string,
-) {
+): Promise<Registration> {
   const { data: registration, error: registrationError } = await supabase
     .from("registrations")
     .select("id")
@@ -17,23 +26,12 @@ async function resolveProfileByWallet(
     throw new Error(`No registration found for wallet ${walletAddress}`);
   }
 
-  const { data: profile, error: profileError } = await supabase
-    .from("public_profiles")
-    .select("id, qr_secret")
-    .eq("registration_id", registration.id)
-    .single();
-
-  if (profileError || !profile) {
-    throw new Error(`No public_profiles row found for wallet ${walletAddress}`);
-  }
-
-  return profile as { id: string; qr_secret: string | null };
+  return registration as Registration;
 }
 
 // Returns the caller's personal check-in QR payload, generating and storing
-// one on first request. Stored as plaintext (not hashed) so it can be
-// redisplayed on every subsequent load, and can be individually revoked by
-// clearing/regenerating just this row's qr_secret.
+// one on first request. The credential is deliberately independent from the
+// public profile row, which is removed whenever a member hides their profile.
 export async function GET(req: NextRequest) {
   const walletAddress = await verifyWalletAuth(req);
   if (!walletAddress)
@@ -41,25 +39,63 @@ export async function GET(req: NextRequest) {
 
   try {
     const supabase = getSupabaseAdmin();
-    const profile = await resolveProfileByWallet(supabase, walletAddress);
+    const registration = await resolveRegistrationByWallet(
+      supabase,
+      walletAddress,
+    );
+    const { data: existingCredential, error: credentialError } = await supabase
+      .from("profile_qr_credentials")
+      .select("registration_id, qr_secret")
+      .eq("registration_id", registration.id)
+      .maybeSingle();
 
-    if (profile.qr_secret) {
-      return NextResponse.json({ profileId: profile.id, qrPayload: profile.qr_secret });
+    if (credentialError) {
+      throw credentialError;
+    }
+
+    if (existingCredential) {
+      const credential = existingCredential as QrCredential;
+      return NextResponse.json({ qrPayload: credential.qr_secret });
     }
 
     const qrSecret = randomBytes(32).toString("base64url");
-    const { error } = await supabase
-      .from("public_profiles")
-      .update({ qr_secret: qrSecret })
-      .eq("id", profile.id);
+    const { error: insertError } = await supabase
+      .from("profile_qr_credentials")
+      .insert({
+        registration_id: registration.id,
+        qr_secret: qrSecret,
+      });
 
-    if (error) throw error;
+    if (!insertError) {
+      return NextResponse.json({ qrPayload: qrSecret });
+    }
 
-    return NextResponse.json({ profileId: profile.id, qrPayload: qrSecret });
-  } catch (error: any) {
+    // Another concurrent request may have created the credential first. Read
+    // the winning value so both requests return a QR that remains valid.
+    if (insertError.code === "23505") {
+      const { data: concurrentCredential, error: concurrentReadError } =
+        await supabase
+          .from("profile_qr_credentials")
+          .select("registration_id, qr_secret")
+          .eq("registration_id", registration.id)
+          .single();
+
+      if (!concurrentReadError && concurrentCredential) {
+        const credential = concurrentCredential as QrCredential;
+        return NextResponse.json({ qrPayload: credential.qr_secret });
+      }
+    }
+
+    throw insertError;
+  } catch (error: unknown) {
     console.error(error);
     return NextResponse.json(
-      { error: error.message || "Failed to issue check-in QR" },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to issue check-in QR",
+      },
       { status: 500 },
     );
   }
