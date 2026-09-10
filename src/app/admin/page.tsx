@@ -1,38 +1,89 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useWallet } from "@/hooks/use-wallet";
-import { useSignMessage } from "wagmi";
 import { Button } from "@/components/ui/button";
 import { WalletButton } from "@/components/wallet-button";
+import Link from "next/link";
+import { SectionCard } from "@/components/admin/section-card";
+import { useSignMessage} from "wagmi"
 
 export const dynamic = "force-dynamic";
+
+function StatTile({
+  label,
+  value,
+  href,
+}: {
+  label: string;
+  value: number;
+  href: string;
+}) {
+    return (
+    <Link
+      href={href}
+      className="flex flex-col gap-1 rounded-xl bg-white/40 p-6 transition-all hover:-translate-y-0.5 hover:bg-white/60 dark:bg-white/10 dark:hover:bg-white/20"
+    >
+      <span className="text-4xl font-black text-black dark:text-white">
+        {value}
+      </span>
+      <span className="font-semibold text-black/70 dark:text-white/80">
+        {label}
+      </span>
+    </Link>
+  );
+}
+
 export default function AdminPage() {
+
+  
   const { address, isConnected, mounted } = useWallet();
   const { signMessageAsync } = useSignMessage();
   const [authHeader, setAuthHeader] = useState<any>(null);
-
   const [claims, setClaims] = useState<any[]>([]);
   const [activeNames, setActiveNames] = useState<any[]>([]);
+  const [events, setEvents] = useState<
+    { id: string; title: string; start_time: string }[]
+  >([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
+
+  const pendingCount = claims.filter((c) => c.status === "PENDING").length;
+  const upcomingCount = events.filter(
+    (ev) => new Date(ev.start_time).getTime() >= Date.now(),
+  ).length;
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+
+
+
+
+
+  // Signs a fresh "Admin Auth" message and stores it as the active auth
+  // headers. Pulled out of authenticate() so handleDecoded can also call it
+  // to silently re-sign and retry when a scan hits an expired signature.
+  const signAdminAuth = async () => {
+    if (!address) throw new Error("Wallet not connected");
+    const timestamp = Date.now().toString();
+    const signature = await signMessageAsync({
+      message: `Admin Auth ${timestamp}`,
+    });
+
+    const headers = {
+      "x-admin-address": address,
+      "x-admin-signature": signature,
+      "x-admin-timestamp": timestamp,
+    };
+
+    setAuthHeader(headers);
+    return headers;
+  };
+
   const authenticate = async () => {
-    if (!address) return;
     try {
-      const timestamp = Date.now().toString();
-      const signature = await signMessageAsync({
-        message: `Admin Auth ${timestamp}`,
-      });
-
-      const headers = {
-        "x-admin-address": address,
-        "x-admin-signature": signature,
-        "x-admin-timestamp": timestamp,
-      };
-
-      setAuthHeader(headers);
-      fetchData(headers);
+      const headers = await signAdminAuth();
+      await fetchData(headers);
     } catch (err: any) {
       setError(err.message || "Failed to authenticate");
     }
@@ -60,10 +111,32 @@ export default function AdminPage() {
           setAuthHeader(null); // Force re-auth
         }
       }
+
+      await fetchEvents(headers);
+
     } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchEvents = async (headers: any) => {
+    setEventsLoading(true);
+    try {
+      const res = await fetch("/api/admin/events", { headers });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to load events");
+      }
+
+      setEvents(Array.isArray(data) ? data : []);
+    } catch (err: any) {
+      setEvents([]);
+      setError(err.message || "Failed to load events");
+    } finally {
+      setEventsLoading(false);
     }
   };
 
@@ -156,14 +229,24 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen py-24 container mx-auto px-4">
-      <div className="flex justify-between items-center mb-12">
-        <h1 className="text-4xl font-black">Admin Dashboard</h1>
-        <Button onClick={() => fetchData(authHeader)} variant="outline">
-          Refresh
-        </Button>
+    <SectionCard title="Overview">
+      <div className="grid gap-6 sm:grid-cols-3">
+        <StatTile
+          label="Pending requests"
+          value={pendingCount}
+          href="/admin/claims"
+        />
+        <StatTile
+          label="Active subnames"
+          value={activeNames.length}
+          href="/admin/claims"
+        />
+        <StatTile
+          label="Upcoming events"
+          value={upcomingCount}
+          href="/admin/events"
+        />
       </div>
-
       <div className="grid md:grid-cols-2 gap-12">
         {/* Pending Claims Queue */}
         <div>
@@ -248,7 +331,11 @@ export default function AdminPage() {
             )}
           </div>
         </div>
-      </div>
-    </div>
+
+        </div>
+      
+      </SectionCard>
+
+    
   );
 }

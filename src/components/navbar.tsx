@@ -1,6 +1,6 @@
 "use client";
 
-import { Sun, Moon, Menu, X } from "lucide-react";
+import { Sun, Moon, Menu, X, Search } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useAccount } from "wagmi";
@@ -8,6 +8,7 @@ import { isAllowedAdminAddress } from "@/lib/admin-auth";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { WalletButton } from "./wallet-button";
+import { ProfileSearch } from "./profile-search";
 
 const navLinks = [
   { label: "About", href: "/pages/about" },
@@ -17,7 +18,7 @@ const navLinks = [
   // { label: "About", href: "#about" },
   // { label: "Events", href: "#events" },
   // { label: "Partners", href: "#partners" },
-  { label: "Search", href: "#search" }, // TODO: add search page
+  // { label: "Search", href: "#search" }, // TODO: add search page
   { label: "Join Us", href: "/pages/join-us" },
   { label: "Claim ID", href: "/pages/claim-id" },
   //{ label: "Connect Wallet", href: "/pages/claim-id" }, // TODO: add wallet connection
@@ -29,6 +30,7 @@ export function Navbar() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [themeReady, setThemeReady] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const { address } = useAccount();
 
   const pathname = usePathname();
@@ -80,13 +82,14 @@ export function Navbar() {
   };
 
   return (
-    <nav
-      className="absolute z-50 bg-nav-bg border-b border-white/10
-      w-[95%] sm:w-[90%] lg:w-[85%] xl:w-[80%]
-      left-1/2 -translate-x-1/2 top-[3%] sm:top-[5%]
-      rounded-full text-nav-text shadow-lg"
-    >
-      <div className="h-14 sm:h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 gap-4">
+    <>
+      <nav
+        className="absolute z-50 bg-nav-bg border-b border-white/10
+        w-[95%] sm:w-[90%] lg:w-[85%] xl:w-[85%]
+        left-1/2 -translate-x-1/2 top-[3%] sm:top-[5%]
+        rounded-full text-nav-text shadow-lg"
+      >
+        <div className="h-14 sm:h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 gap-4">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group shrink-0 min-w-0">
           <img
@@ -101,7 +104,7 @@ export function Navbar() {
         </Link>
 
         {/* Desktop links */}
-        <div className="hidden xl:flex items-center gap-10 2xl:gap-16 min-w-0 ml-auto">
+        <div className="hidden xl:contents">
           {navLinks.map((link) => (
             <Link
               key={link.href}
@@ -125,8 +128,23 @@ export function Navbar() {
             </Link>
           )}
 
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
+            className="flex items-center gap-2 rounded-full border border-black/10 bg-black/5 px-4 py-2 text-nav-text transition-colors hover:bg-black/10 dark:border-white/20 dark:bg-white/10 dark:hover:bg-white/15"
+            aria-label="Search public profiles"
+          >
+            <Search className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <span className="whitespace-nowrap text-sm min-[1400px]:hidden">
+              Search profiles
+            </span>
+            <span className="hidden whitespace-nowrap text-sm min-[1400px]:inline">
+              Search person or wallet ID
+            </span>
+          </button>
+
           <div className="flex items-center shrink-0">
-            <WalletButton />
+            <WalletButton variant="nav" />
           </div>
 
           {/* Theme toggle button */}
@@ -146,6 +164,8 @@ export function Navbar() {
               />
             </span>
           </Button>
+          
+
         </div>
 
         {/* Mobile controls */}
@@ -179,7 +199,7 @@ export function Navbar() {
             )}
           </button>
         </div>
-      </div>
+        </div>
 
       {/* Mobile dropdown */}
       {mobileOpen && (
@@ -210,12 +230,30 @@ export function Navbar() {
               </Link>
             )}
 
+            <button
+              type="button"
+              onClick={() => {
+                setMobileOpen(false);
+                setSearchOpen(true);
+              }}
+              className="mt-2 flex items-center rounded-xl px-3 py-3 text-left text-nav-text transition-colors hover:bg-white/10"
+            >
+              <span className="font-semibold">Search profiles</span>
+            </button>
+
             <div className="pt-3 px-3" onClickCapture={() => setMobileOpen(false)}>
-              <WalletButton />
+              <WalletButton variant="nav" />
             </div>
           </div>
         </div>
       )}
-    </nav>
+      </nav>
+
+      <ProfileSearch
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        excludedWalletAddress={address}
+      />
+    </>
   );
 }

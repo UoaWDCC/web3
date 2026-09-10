@@ -14,6 +14,7 @@ import {
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormInput, FormSelect } from "./ui/form-field";
+import { Button } from "./ui/button";
 import { RegistrationService } from "../services/registrations/registrations-service";
 
 /**
@@ -97,21 +98,27 @@ export function RegistrationForm() {
    * @param {RegistrationData} data - The validated form data.
    */
   const onSubmit: SubmitHandler<RegistrationData> = async (data) => {
-    console.log("Submitting", data);
+    try {
+      const emailTaken = await RegistrationService.isEmailTaken(data.email);
+      if (emailTaken) {
+        setError("email", {
+          type: "custom",
+          message: "This email is already registered",
+        });
+        return;
+      }
 
-    const emailTaken = await RegistrationService.isEmailTaken(data.email);
-    if (emailTaken) {
-      setError("email", {
-        type: "custom",
-        message: "This email is already registered"
-      })
-      return;
+      await RegistrationService.submitRegistration(data);
+
+      reset();
+      setFinishedForm(true);
+    } catch (error) {
+      console.error("Unable to submit registration", error);
+      setError("root", {
+        type: "server",
+        message: "Unable to submit your registration. Please try again.",
+      });
     }
-
-    await RegistrationService.submitRegistration(data);
-
-    reset();
-    setFinishedForm(true);
   };
 
   return (
@@ -256,14 +263,20 @@ export function RegistrationForm() {
             {...register("goal_statement")}
           />
 
-          <button
+          {errors.root?.message && (
+            <p className="w-full max-w-[680px] text-sm font-semibold text-red-700">
+              {errors.root.message}
+            </p>
+          )}
+
+          <Button
             type="submit"
-            className="mt-4 mx-auto w-full sm:w-54 rounded-xl px-4 py-2.5 text-2xl font-bold shadow-sm cursor-pointer 
-            bg-white text-button-txt transition-colors hover:bg-button-txt hover:text-white
-            border-2 border-button-txt"
+            variant="pill"
+            size="lg"
+            className="text-base px-13 h-12 rounded-2xl mt-5"
           >
             Submit
-          </button>
+          </Button>
         </form>
       )}
     </div>
