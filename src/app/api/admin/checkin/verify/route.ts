@@ -25,9 +25,10 @@ async function verifyAdminAuth(req: NextRequest) {
   }
 }
 
-// Takes a scanned member QR (their public_profiles.qr_secret) plus the event
-// being checked into, and appends that event to registrations.events_attended
-// if it isn't already there.
+// Takes a scanned member QR plus the event being checked into, and appends that
+// event to registrations.events_attended if it isn't already there. QR
+// credentials are kept separately from public profiles so private members can
+// still check in.
 export async function POST(req: NextRequest) {
   const isAuth = await verifyAdminAuth(req);
   if (!isAuth)
@@ -45,14 +46,14 @@ export async function POST(req: NextRequest) {
 
     const supabase = getSupabaseAdmin();
 
-    const { data: profile, error: profileError } = await supabase
-      .from("public_profiles")
-      .select("id, registration_id")
+    const { data: credential, error: credentialError } = await supabase
+      .from("profile_qr_credentials")
+      .select("registration_id")
       .eq("qr_secret", qrSecret)
       .maybeSingle();
 
-    if (profileError) throw profileError;
-    if (!profile) {
+    if (credentialError) throw credentialError;
+    if (!credential) {
       return NextResponse.json(
         { error: "QR code not recognized" },
         { status: 404 },
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest) {
     const { data: registration, error: registrationError } = await supabase
       .from("registrations")
       .select("id, email, first_name, last_name, unique_name, events_attended")
-      .eq("id", profile.registration_id)
+      .eq("id", credential.registration_id)
       .single();
 
     if (registrationError || !registration) {
@@ -105,23 +106,24 @@ export async function POST(req: NextRequest) {
     if (updateError) throw updateError;
 
     console.log("[admin-checkin] scan success", {
-        eventId,
-        memberName,
-        alreadyCheckedIn: true,
-        scannedAt: new Date().toISOString(),
-      });
-
-    
+      eventId,
+      memberName,
+      alreadyCheckedIn: false,
+      scannedAt: new Date().toISOString(),
+    });
 
     return NextResponse.json({
       success: true,
       alreadyCheckedIn: false,
       member: { name: memberName },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(error);
     return NextResponse.json(
-      { error: error.message || "Failed to verify check-in" },
+      {
+        error:
+          error instanceof Error ? error.message : "Failed to verify check-in",
+      },
       { status: 500 },
     );
   }

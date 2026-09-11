@@ -285,6 +285,7 @@ export default function ProfilePage() {
           setProfileImage(registration.profile_picture_url || null);
           setBadges(registration.badges || []);
           setEventsAttended(attended);
+          setProfileVisible(registration.profile_visible ?? true);
           await fetchAttendedEventDetails(attended);
         } else {
           setDisplayName("Name");
