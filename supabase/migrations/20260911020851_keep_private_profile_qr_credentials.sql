@@ -38,7 +38,10 @@ begin
       on conflict do nothing
     $sql$;
 
-    execute 'alter table public.public_profiles drop column qr_secret';
+    -- Keep the legacy column until the application change is deployed. The
+    -- currently deployed QR routes still read it, so dropping it here would
+    -- break check-in during a rolling deployment. A follow-up migration can
+    -- remove it once all application instances use profile_qr_credentials.
   end if;
 end;
 $migration$;
