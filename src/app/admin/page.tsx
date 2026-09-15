@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useWallet } from "@/hooks/use-wallet";
+// import { useWallet } from "@/hooks/use-wallet"; 
 import { Button } from "@/components/ui/button";
 import { WalletButton } from "@/components/wallet-button";
 import Link from "next/link";
 import { SectionCard } from "@/components/admin/section-card";
-import { useSignMessage} from "wagmi"
+// import { useSignMessage} from "wagmi"
+import { useAdminAuth } from "@/hooks/use-admin-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -37,9 +38,10 @@ function StatTile({
 export default function AdminPage() {
 
   
-  const { address, isConnected, mounted } = useWallet();
-  const { signMessageAsync } = useSignMessage();
-  const [authHeader, setAuthHeader] = useState<any>(null);
+  // const { address, isConnected, mounted } = useWallet();
+  // const { signMessageAsync } = useSignMessage();
+  // const [authHeader, setAuthHeader] = useState<any>(null);
+  const { mounted, isConnected, authHeader, signAdminAuth, clearAdminAuth } = useAdminAuth();
   const [claims, setClaims] = useState<any[]>([]);
   const [activeNames, setActiveNames] = useState<any[]>([]);
   const [events, setEvents] = useState<
@@ -60,25 +62,25 @@ export default function AdminPage() {
 
 
 
-  // Signs a fresh "Admin Auth" message and stores it as the active auth
-  // headers. Pulled out of authenticate() so handleDecoded can also call it
-  // to silently re-sign and retry when a scan hits an expired signature.
-  const signAdminAuth = async () => {
-    if (!address) throw new Error("Wallet not connected");
-    const timestamp = Date.now().toString();
-    const signature = await signMessageAsync({
-      message: `Admin Auth ${timestamp}`,
-    });
+  // // Signs a fresh "Admin Auth" message and stores it as the active auth
+  // // headers. Pulled out of authenticate() so handleDecoded can also call it
+  // // to silently re-sign and retry when a scan hits an expired signature.
+  // const signAdminAuth = async () => {
+  //   if (!address) throw new Error("Wallet not connected");
+  //   const timestamp = Date.now().toString();
+  //   const signature = await signMessageAsync({
+  //     message: `Admin Auth ${timestamp}`,
+  //   });
 
-    const headers = {
-      "x-admin-address": address,
-      "x-admin-signature": signature,
-      "x-admin-timestamp": timestamp,
-    };
+  //   const headers = {
+  //     "x-admin-address": address,
+  //     "x-admin-signature": signature,
+  //     "x-admin-timestamp": timestamp,
+  //   };
 
-    setAuthHeader(headers);
-    return headers;
-  };
+  //   setAuthHeader(headers);
+  //   return headers;
+  // };
 
   const authenticate = async () => {
     try {
@@ -108,7 +110,7 @@ export default function AdminPage() {
       } else {
         const err = await namesRes.json();
         if (err.error === "Unauthorized") {
-          setAuthHeader(null); // Force re-auth
+          clearAdminAuth(); // Force re-auth and clears sessionStorage
         }
       }
 
