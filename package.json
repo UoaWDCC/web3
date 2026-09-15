@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
-    "@prisma/adapter-pg": "^7.6.0",
+    "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.6.0",
     "@radix-ui/react-slot": "^1.2.3",
     "@reown/appkit": "^1.8.19",
