@@ -2,6 +2,7 @@ import { getSupabase } from "./supabase";
 
 export type PublicProfile = {
   id: string;
+  registration_id: number;
   display_name: string;
   unique_name: string | null;
   profile_picture_url: string | null;
@@ -14,13 +15,14 @@ export type PublicProfile = {
 
 export type PublicProfileSearchResult = Omit<
   PublicProfile,
-  "created_at" | "updated_at"
+  "created_at" | "updated_at" | "registration_id"
 > & {
   match_score: number;
 };
 
 const PUBLIC_PROFILE_COLUMNS = [
   "id",
+  "registration_id",
   "display_name",
   "unique_name",
   "profile_picture_url",
