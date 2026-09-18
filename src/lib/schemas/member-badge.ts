@@ -3,12 +3,13 @@ import { z } from "zod";
 import { badgeSchema } from "./badge";
 
 // As with `badge.ts`, field names mirror the `member_badges` columns verbatim.
-// memberid is a uuid referencing public_profiles(id), via the existing
-// member_badges_memberid_fkey. Note it is *not* registrations.id, which is a
-// bigint — these are two different notions of "member".
+// memberid is an int8 referencing registrations(id), via the existing
+// member_badges_memberid_fkey. It is deliberately *not* public_profiles.id:
+// that row is deleted when a member hides their profile, which would take
+// their badges with it, whereas the registration outlives visibility changes.
 const memberBadgeFieldsSchema = z.object({
   badgeid: z.uuid(),
-  memberid: z.uuid(),
+  memberid: z.number().int().positive(),
   attendanceid: z.uuid().nullable().default(null),
 });
 

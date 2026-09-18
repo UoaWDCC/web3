@@ -59,7 +59,7 @@ export default class MemberBadgesService {
    */
   public async getAward(
     badgeId: string,
-    memberId: string,
+    memberId: number,
   ): Promise<MemberBadge | null> {
     const { data, error } = await this.db
       .from(TABLE)
@@ -75,16 +75,16 @@ export default class MemberBadgesService {
   /**
    * Checks whether a member holds a badge.
    */
-  public async hasBadge(badgeId: string, memberId: string): Promise<boolean> {
+  public async hasBadge(badgeId: string, memberId: number): Promise<boolean> {
     return (await this.getAward(badgeId, memberId)) !== null;
   }
 
   /**
    * Retrieves every badge a member holds, with the badge details embedded.
-   * @param memberId The public_profiles.id of the member.
+   * @param memberId The registrations.id of the member.
    */
   public async getBadgesForMember(
-    memberId: string,
+    memberId: number,
   ): Promise<MemberBadgeWithBadge[]> {
     const { data, error } = await this.db
       .from(TABLE)
@@ -117,7 +117,7 @@ export default class MemberBadgesService {
    * This is a hard delete — the table's `revokedat`/`revokedby` columns are
    * deliberately unused until the admin model exists to populate them.
    */
-  public async revokeBadge(badgeId: string, memberId: string): Promise<void> {
+  public async revokeBadge(badgeId: string, memberId: number): Promise<void> {
     const { error } = await this.db
       .from(TABLE)
       .delete()
