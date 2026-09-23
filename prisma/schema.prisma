@@ -37,7 +37,6 @@ model attendance_records {
   public_profiles_attendance_records_revoked_byTopublic_profiles  public_profiles? @relation("attendance_records_revoked_byTopublic_profiles", fields: [revoked_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
   public_profiles_attendance_records_user_idTopublic_profiles     public_profiles  @relation("attendance_records_user_idTopublic_profiles", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   public_profiles_attendance_records_verified_byTopublic_profiles public_profiles? @relation("attendance_records_verified_byTopublic_profiles", fields: [verified_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  member_badges                                                   member_badges?
 
   @@unique([user_id, event_id])
   @@index([event_id], map: "idx_attendance_event")
@@ -113,21 +112,17 @@ model events {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model member_badges {
-  id                                                       String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  badgeid                                                  String             @db.Uuid
-  memberid                                                 String             @db.Uuid
-  attendanceid                                             String             @unique @db.Uuid
-  awardedat                                                DateTime           @default(now()) @db.Timestamptz(6)
-  revokedat                                                DateTime?          @db.Timestamptz(6)
-  revokedby                                                String?            @db.Uuid
-  attendance_records                                       attendance_records @relation(fields: [attendanceid], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  badges                                                   badges             @relation(fields: [badgeid], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  public_profiles_member_badges_memberidTopublic_profiles  public_profiles    @relation("member_badges_memberidTopublic_profiles", fields: [memberid], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  public_profiles_member_badges_revokedbyTopublic_profiles public_profiles?   @relation("member_badges_revokedbyTopublic_profiles", fields: [revokedby], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id                                                       String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  badgeid                                                  String           @db.Uuid
+  awardedat                                                DateTime         @default(now()) @db.Timestamptz(6)
+  revokedat                                                DateTime?        @db.Timestamptz(6)
+  revokedby                                                String?          @db.Uuid
+  memberid                                                 BigInt
+  badges                                                   badges           @relation(fields: [badgeid], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  public_profiles_member_badges_memberidTopublic_profiles  registrations    @relation("member_badges_memberidTopublic_profiles", fields: [memberid], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  public_profiles_member_badges_revokedbyTopublic_profiles public_profiles? @relation("member_badges_revokedbyTopublic_profiles", fields: [revokedby], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  @@unique([memberid, badgeid])
   @@index([badgeid], map: "idx_member_badges_badge")
-  @@index([memberid], map: "idx_member_badges_member")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -152,9 +147,8 @@ model public_profiles {
   attendance_records_attendance_records_user_idTopublic_profiles     attendance_records[]  @relation("attendance_records_user_idTopublic_profiles")
   attendance_records_attendance_records_verified_byTopublic_profiles attendance_records[]  @relation("attendance_records_verified_byTopublic_profiles")
   audit_logs                                                         audit_logs[]
-  revoked_badges                                                             badges[]
+  revoked_badges                                                     badges[]
   event_registrations                                                event_registrations[]
-  member_badges_member_badges_memberidTopublic_profiles              member_badges[]       @relation("member_badges_memberidTopublic_profiles")
   member_badges_member_badges_revokedbyTopublic_profiles             member_badges[]       @relation("member_badges_revokedbyTopublic_profiles")
   registrations                                                      registrations         @relation(fields: [registration_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
@@ -166,38 +160,49 @@ model public_profiles {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 /// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model registrations {
-  id                   BigInt           @id @default(autoincrement())
-  first_name           String
-  last_name            String
-  email                String
-  university           uni_enum
-  university_other     String?
-  upi                  String?
-  student_id           BigInt?
-  degree_type          degree_enum?
-  faculty              faculty_enum?
-  goal_statement       String?
-  created_at           DateTime?        @default(now()) @db.Timestamptz(6)
-  wallet_id            String?
-  ens                  String?
-  unique_name          String?
-  profile_picture_path String?
-  profile_picture_url  String?
-  badges               String[]         @default([])
-  events_attended      String[]         @default([])
-  profile_visible      Boolean          @default(true)
-  public_profiles      public_profiles?
+  id                                                    BigInt                  @id @default(autoincrement())
+  first_name                                            String
+  last_name                                             String
+  email                                                 String
+  university                                            uni_enum
+  university_other                                      String?
+  upi                                                   String?
+  student_id                                            BigInt?
+  degree_type                                           degree_enum?
+  faculty                                               faculty_enum?
+  goal_statement                                        String?
+  created_at                                            DateTime?               @default(now()) @db.Timestamptz(6)
+  wallet_id                                             String?
+  ens                                                   String?
+  unique_name                                           String?
+  profile_picture_path                                  String?
+  profile_picture_url                                   String?
+  badges                                                String[]                @default([])
+  events_attended                                       String[]                @default([])
+  profile_visible                                       Boolean                 @default(true)
+  member_badges_member_badges_memberidTopublic_profiles member_badges[]         @relation("member_badges_memberidTopublic_profiles")
+  profile_qr_credentials                                profile_qr_credentials?
+  public_profiles                                       public_profiles?
 }
 
 model ClaimRequest {
   id            String   @id @default(uuid())
   walletAddress String
   requestedName String
-  status        String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  status        String   @default("PENDING")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
 
-  @@unique([walletAddress, status])
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model profile_qr_credentials {
+  registration_id BigInt        @id
+  qr_secret       String        @unique
+  created_at      DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime      @default(now()) @db.Timestamptz(6)
+  registrations   registrations @relation(fields: [registration_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 /// This enum is commented in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
