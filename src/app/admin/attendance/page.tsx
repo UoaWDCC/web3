@@ -2,12 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import QrScanner from "qr-scanner";
-// import { useSignMessage } from "wagmi";
 import { SectionCard } from "@/components/admin/section-card";
 import { Button } from "@/components/ui/button";
 import { WalletButton } from "@/components/wallet-button";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
-// import { useWallet } from "@/hooks/use-wallet";
 
 type AdminAuthHeaders = {
   "x-admin-address": string;
@@ -24,10 +22,6 @@ type AdminEventSummary = {
 // const ADMIN_AUTH_STORAGE_KEY = "web3uoa.adminAuth";
 
 export default function AdminAttendancePage() {
-  // const { address, isConnected, mounted } = useWallet();
-  // const { signMessageAsync } = useSignMessage();
-
-  // const [authHeader, setAuthHeader] = useState<AdminAuthHeaders | null>(null);
 
   const { mounted, isConnected, address, authHeader, signAdminAuth, clearAdminAuth } = useAdminAuth();
   const [events, setEvents] = useState<AdminEventSummary[]>([]);
@@ -48,68 +42,12 @@ export default function AdminAttendancePage() {
   const qrScannerRef = useRef<QrScanner | null>(null);
   const processingScanRef = useRef(false);
 
-  // const isFreshAdminAuth = (headers: AdminAuthHeaders | null) => {
-  //   if (!headers) return false;
-  //   const timestamp = Number(headers["x-admin-timestamp"]);
-  //   if (!Number.isFinite(timestamp)) return false;
-  //   return Date.now() - timestamp <= 4 * 60 * 60 * 1000;
-  // };
-
-  // const saveAdminAuth = (headers: AdminAuthHeaders) => {
-  //   setAuthHeader(headers);
-  //   sessionStorage.setItem(ADMIN_AUTH_STORAGE_KEY, JSON.stringify(headers));
-  // };
-
-  // const clearAdminAuth = () => {
-  //   clearAdminAuth();
-  //   sessionStorage.removeItem(ADMIN_AUTH_STORAGE_KEY);
-  // };
-
-  // useEffect(() => {
-  //   if (!mounted || !address) return;
-
-  //   const raw = sessionStorage.getItem(ADMIN_AUTH_STORAGE_KEY);
-  //   if (!raw) return;
-
-  //   try {
-  //     const parsed = JSON.parse(raw) as AdminAuthHeaders;
-  //     const sameAddress =
-  //       parsed["x-admin-address"]?.toLowerCase() === address.toLowerCase();
-
-  //     if (sameAddress && isFreshAdminAuth(parsed)) {
-  //       setAuthHeader(parsed);
-  //     } else {
-  //       sessionStorage.removeItem(ADMIN_AUTH_STORAGE_KEY);
-  //     }
-  //   } catch {
-  //     sessionStorage.removeItem(ADMIN_AUTH_STORAGE_KEY);
-  //   }
-  // }, [mounted, address]);
-
   useEffect(() => {
     if (!mounted) return;
     if (!isConnected || !address) {
       clearAdminAuth();
     }
   }, [mounted, isConnected, address]);
-
-  // const signAdminAuth = async () => {
-  //   if (!address) throw new Error("Wallet not connected");
-
-  //   const timestamp = Date.now().toString();
-  //   const signature = await signMessageAsync({
-  //     message: `Admin Auth ${timestamp}`,
-  //   });
-
-  //   const headers: AdminAuthHeaders = {
-  //     "x-admin-address": address,
-  //     "x-admin-signature": signature,
-  //     "x-admin-timestamp": timestamp,
-  //   };
-
-  //   saveAdminAuth(headers);
-  //   return headers;
-  // };
 
   const fetchEvents = async (headers: AdminAuthHeaders) => {
     setEventsLoading(true);
