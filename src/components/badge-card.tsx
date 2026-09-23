@@ -31,18 +31,18 @@ export function BadgeCard({ award }: { award: MemberBadgeWithBadge }) {
   const category = CATEGORY_LABELS[badge.category] ?? badge.category;
 
   // A dead or unreachable image URL would otherwise leave a broken-image icon
-  // in the tile. Dropping the image falls back to the name on its own, which is
-  // what the tile looked like before badges had artwork.
+  // in the circle. Dropping the image falls back to the badge's initial.
   const [imageBroken, setImageBroken] = useState(false);
   const showImage = Boolean(badge.imageurl) && !imageBroken;
 
   return (
-    <div className="group relative w-full">
+    <div className="group relative w-full flex justify-center">
       {/* A button rather than a div so the detail panel is reachable by keyboard
-          and by tap, not just by mouse hover. */}
+          and by tap, not just by mouse hover. The badge is shown as the image
+          alone; its name and details live in the hover panel below. */}
       <button
         type="button"
-        className="w-full min-h-[5rem] rounded-3xl border border-primary/20 bg-primary/5 p-3 flex flex-col items-center justify-center gap-2 text-center transition-transform hover:scale-[1.03] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:border-[#A3DEF4]/25 dark:bg-white/10"
+        className="w-4/5 max-w-[10rem] aspect-square rounded-full overflow-hidden flex items-center justify-center transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         aria-label={`${badge.name}${awardedOn ? `, awarded ${awardedOn}` : ""}`}
       >
         {showImage ? (
@@ -52,12 +52,15 @@ export function BadgeCard({ award }: { award: MemberBadgeWithBadge }) {
             src={badge.imageurl!}
             alt=""
             onError={() => setImageBroken(true)}
-            className="w-12 h-12 sm:w-14 sm:h-14 object-contain"
+            className="w-full h-full object-cover"
           />
-        ) : null}
-        <span className="text-sm font-semibold text-primary dark:text-[#A3DEF4]">
-          {badge.name}
-        </span>
+        ) : (
+          // With no artwork there is nothing else in the circle, so the initial
+          // keeps badges without images distinguishable at a glance.
+          <span className="w-full h-full flex items-center justify-center bg-primary/15 text-2xl font-bold text-primary dark:bg-[#A3DEF4]/20 dark:text-[#A3DEF4]">
+            {badge.name.charAt(0).toUpperCase()}
+          </span>
+        )}
       </button>
 
       <div
