@@ -11,6 +11,9 @@ import { ProfileVisibilityToggle } from "@/components/profile-visibility-toggle"
 import { IoQrCode } from "react-icons/io5";
 import QrCode from "qrcode";
 import { getSupabase } from "@/services/supabase";
+import MemberBadgesService from "@/services/member-badges/member-badges-service";
+import type { MemberBadgeWithBadge } from "@/lib/schemas/member-badge";
+import { BadgeCard } from "@/components/badge-card";
 
 const getErrorMessage = (error: unknown) => {
   if (error instanceof Error) {
@@ -50,7 +53,7 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState("Name");
   const [isEditingName, setIsEditingName] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [badges, setBadges] = useState<string[]>([]);
+  const [badges, setBadges] = useState<MemberBadgeWithBadge[]>([]);
   const [eventsAttended, setEventsAttended] = useState<string[]>([]);
   const [eventDetails, setEventDetails] = useState<
     Record<string, { title: string; eventUrl: string | null }>
@@ -180,7 +183,6 @@ export default function ProfilePage() {
         });
 
       setProfileImage(result.profilePictureUrl);
-      setBadges(result.record.badges ?? []);
       setStatusMessage("Profile picture saved.");
     } catch (error) {
       const message = getErrorMessage(error);
@@ -235,6 +237,24 @@ export default function ProfilePage() {
       }
     };
 
+    // Badges live in member_badges, keyed on registrations.id. The query embeds
+    // the parent badge, so the image, description and criteria arrive in a
+    // single round trip and the hover panel needs no follow-up request.
+    // Failures are swallowed so a badge outage leaves the profile intact.
+    const fetchBadges = async (memberId: number) => {
+      try {
+        const awards =
+          await new MemberBadgesService().getBadgesForMember(memberId);
+
+        if (!cancelled) {
+          setBadges(awards);
+        }
+      } catch (error) {
+        console.error("Failed to load badges", error);
+        if (!cancelled) setBadges([]);
+      }
+    };
+
     const loadProfile = async () => {
       if (!address) {
         setWalletRegistered(false);
@@ -283,8 +303,8 @@ export default function ProfilePage() {
           const attended = registration.events_attended || [];
           setDisplayName(displayNameFallback || "Name");
           setProfileImage(registration.profile_picture_url || null);
-          setBadges(registration.badges || []);
           setEventsAttended(attended);
+          await fetchBadges(registration.id);
           await fetchAttendedEventDetails(attended);
         } else {
           setDisplayName("Name");
@@ -342,7 +362,6 @@ export default function ProfilePage() {
 
       setIsEditingName(false);
       setDisplayName(updated.unique_name ?? displayName);
-      setBadges(updated.badges ?? badges);
       setStatusMessage("Display name saved.");
     } catch (error) {
       const message = getErrorMessage(error);
@@ -590,15 +609,8 @@ export default function ProfilePage() {
               </p>
             ) : badges.length > 0 ? (
               <div className="grid grid-cols-3 gap-4 sm:gap-6 justify-items-center">
-                {badges.map((badge, index) => (
-                  <div
-                    key={`${badge}-${index}`}
-                    className="w-full min-h-[5rem] rounded-3xl border border-primary/20 bg-primary/5 p-3 flex items-center justify-center text-center dark:border-[#A3DEF4]/25 dark:bg-white/10"
-                  >
-                    <span className="text-sm font-semibold text-primary dark:text-[#A3DEF4]">
-                      {badge}
-                    </span>
-                  </div>
+                {badges.map((award) => (
+                  <BadgeCard key={award.id} award={award} />
                 ))}
               </div>
             ) : (
