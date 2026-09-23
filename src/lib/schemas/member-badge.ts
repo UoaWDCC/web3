@@ -10,7 +10,6 @@ import { badgeSchema } from "./badge";
 const memberBadgeFieldsSchema = z.object({
   badgeid: z.uuid(),
   memberid: z.number().int().positive(),
-  attendanceid: z.uuid().nullable().default(null),
 });
 
 const memberBadgeInsertSchema = memberBadgeFieldsSchema;
