@@ -126,8 +126,8 @@ export default function PublicProfilePage() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-10 w-full max-w-[90vw] lg:flex-row lg:justify-center lg:items-end lg:gap-16">
-        <div className="bg-white/80 w-full lg:w-[42vw] p-8 rounded-2xl min-h-[44vh] lg:min-h-[34vh] lg:mt-10 shadow-lg dark:bg-[#404246]/85 dark:shadow-black/20">
+      <div className="flex flex-col gap-10 w-full max-w-[90vw] lg:flex-row lg:justify-center lg:items-start lg:gap-16">
+        <div className="bg-white/80 w-full lg:w-[42vw] p-8 rounded-2xl min-h-[44vh] lg:min-h-[34vh] shadow-lg dark:bg-[#404246]/85 dark:shadow-black/20">
           <p className="text-2xl font-bold">Badges</p>
 
           <div className="mt-8">
