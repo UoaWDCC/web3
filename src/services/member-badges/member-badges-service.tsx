@@ -30,7 +30,7 @@ export default class MemberBadgesService {
   /**
    * Awards a badge to a member. Idempotent: awarding a badge the member
    * already holds returns the existing row rather than throwing.
-   * @param award The badge, member, and optionally the attendance that earned it.
+   * @param award The badge and the member receiving it.
    * @returns The member_badges row.
    */
   public async awardBadge(award: MemberBadgeInsert): Promise<MemberBadge> {
