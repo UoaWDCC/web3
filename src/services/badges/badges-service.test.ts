@@ -338,4 +338,70 @@ describe("BadgesService", () => {
       ).rejects.toMatchObject({ code: "42501" });
     });
   });
+
+  describe("uploadBadgeImage", () => {
+    const PUBLIC_URL = "https://example.supabase.co/storage/v1/object/public";
+
+    /** A stand-in for supabase.storage that records the upload it was given. */
+    function fakeStorage(uploadError: unknown = null) {
+      const upload = vi.fn(() => Promise.resolve({ error: uploadError }));
+      const getPublicUrl = vi.fn((path: string) => ({
+        data: { publicUrl: `${PUBLIC_URL}/badges/${path}` },
+      }));
+      const bucket = vi.fn(() => ({ upload, getPublicUrl }));
+
+      return {
+        client: { storage: { from: bucket } } as unknown as SupabaseClient,
+        bucket,
+        upload,
+      };
+    }
+
+    const image = (name = "Trophy.PNG") =>
+      new File(["png-bytes"], name, { type: "image/png" });
+
+    it("uploads to the badges bucket under badge_image with a random name", async () => {
+      const fake = fakeStorage();
+
+      const { imagePath } = await new BadgesService(
+        fake.client,
+      ).uploadBadgeImage(image());
+
+      expect(fake.bucket).toHaveBeenCalledWith("badges");
+      expect(imagePath).toMatch(/^badge_image\/[0-9a-f-]{36}\.png$/);
+      expect(fake.upload).toHaveBeenCalledWith(
+        imagePath,
+        expect.any(File),
+        expect.objectContaining({ upsert: false, contentType: "image/png" }),
+      );
+    });
+
+    it("returns the public URL of the uploaded file", async () => {
+      const fake = fakeStorage();
+
+      const { imagePath, imageUrl } = await new BadgesService(
+        fake.client,
+      ).uploadBadgeImage(image());
+
+      expect(imageUrl).toBe(`${PUBLIC_URL}/badges/${imagePath}`);
+    });
+
+    it("rejects a file with no extension without uploading", async () => {
+      const fake = fakeStorage();
+
+      await expect(
+        new BadgesService(fake.client).uploadBadgeImage(image("trophy")),
+      ).rejects.toThrow("Badge image must have a file extension.");
+
+      expect(fake.upload).not.toHaveBeenCalled();
+    });
+
+    it("throws the storage error when the upload fails", async () => {
+      const fake = fakeStorage({ message: "Bucket not found" });
+
+      await expect(
+        new BadgesService(fake.client).uploadBadgeImage(image()),
+      ).rejects.toMatchObject({ message: "Bucket not found" });
+    });
+  });
 });

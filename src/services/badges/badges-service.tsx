@@ -11,6 +11,11 @@ import { getSupabase } from "../supabase";
 
 const TABLE = "badges";
 
+// The bucket must be public: imageurl stores a plain public URL, the same way
+// event images do, rather than a signed URL that would eventually expire.
+const IMAGE_BUCKET = "badges";
+const IMAGE_FOLDER = "badge_image";
+
 /** Drops keys the caller left undefined so a patch never clears a column by accident. */
 function definedFields<T extends object>(patch: T): Partial<T> {
   return Object.fromEntries(
@@ -115,6 +120,36 @@ export default class BadgesService {
 
     if (error) throw error;
     return data as Badge;
+  }
+
+  /**
+   * Uploads a badge image to storage under a random name, so two badges whose
+   * files share a name can't overwrite each other.
+   * @param file The image to upload.
+   * @returns The storage path and the public URL to store in `imageurl`.
+   */
+  public async uploadBadgeImage(
+    file: File,
+  ): Promise<{ imagePath: string; imageUrl: string }> {
+    const extension = file.name.split(".").pop()?.toLowerCase();
+    if (!extension || extension === file.name.toLowerCase()) {
+      throw new Error("Badge image must have a file extension.");
+    }
+
+    const imagePath = `${IMAGE_FOLDER}/${crypto.randomUUID()}.${extension}`;
+
+    const { error } = await this.db.storage
+      .from(IMAGE_BUCKET)
+      .upload(imagePath, file, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: file.type,
+      });
+
+    if (error) throw error;
+
+    const { data } = this.db.storage.from(IMAGE_BUCKET).getPublicUrl(imagePath);
+    return { imagePath, imageUrl: data.publicUrl };
   }
 
   /**
