@@ -63,6 +63,34 @@ function dbError(code: string, message = "stubbed failure") {
   return { code, message, details: null, hint: null };
 }
 
+const PUBLIC_URL = "https://example.supabase.co/storage/v1/object/public";
+
+/**
+ * A stand-in for supabase.storage that records the calls it was given.
+ * getPublicUrl mirrors storage-js, which returns
+ * encodeURI(`${storageUrl}/object/public/${bucket}/${path}`).
+ */
+function fakeStorage({
+  uploadError = null,
+  removeError = null,
+}: { uploadError?: unknown; removeError?: unknown } = {}) {
+  const upload = vi.fn(() => Promise.resolve({ error: uploadError }));
+  const remove = vi.fn(() =>
+    Promise.resolve({ data: removeError ? null : [], error: removeError }),
+  );
+  const getPublicUrl = vi.fn((path: string) => ({
+    data: { publicUrl: encodeURI(`${PUBLIC_URL}/badges/${path}`) },
+  }));
+  const bucket = vi.fn(() => ({ upload, remove, getPublicUrl }));
+
+  return {
+    client: { storage: { from: bucket } } as unknown as SupabaseClient,
+    bucket,
+    upload,
+    remove,
+  };
+}
+
 function badgeRow(overrides: Partial<Badge> = {}): Badge {
   return {
     id: BADGE_ID,
@@ -340,23 +368,6 @@ describe("BadgesService", () => {
   });
 
   describe("uploadBadgeImage", () => {
-    const PUBLIC_URL = "https://example.supabase.co/storage/v1/object/public";
-
-    /** A stand-in for supabase.storage that records the upload it was given. */
-    function fakeStorage(uploadError: unknown = null) {
-      const upload = vi.fn(() => Promise.resolve({ error: uploadError }));
-      const getPublicUrl = vi.fn((path: string) => ({
-        data: { publicUrl: `${PUBLIC_URL}/badges/${path}` },
-      }));
-      const bucket = vi.fn(() => ({ upload, getPublicUrl }));
-
-      return {
-        client: { storage: { from: bucket } } as unknown as SupabaseClient,
-        bucket,
-        upload,
-      };
-    }
-
     const image = (name = "Trophy.PNG") =>
       new File(["png-bytes"], name, { type: "image/png" });
 
@@ -397,11 +408,93 @@ describe("BadgesService", () => {
     });
 
     it("throws the storage error when the upload fails", async () => {
-      const fake = fakeStorage({ message: "Bucket not found" });
+      const fake = fakeStorage({
+        uploadError: { message: "Bucket not found" },
+      });
 
       await expect(
         new BadgesService(fake.client).uploadBadgeImage(image()),
       ).rejects.toMatchObject({ message: "Bucket not found" });
+    });
+  });
+
+  describe("getBadgeImagePath", () => {
+    const pathOf = (url: string | null | undefined) =>
+      new BadgesService(fakeStorage().client).getBadgeImagePath(url);
+
+    it("recovers the path from a public URL this service produced", async () => {
+      const fake = fakeStorage();
+      const service = new BadgesService(fake.client);
+      const file = new File(["png-bytes"], "Trophy.png", { type: "image/png" });
+
+      const { imagePath, imageUrl } = await service.uploadBadgeImage(file);
+
+      expect(service.getBadgeImagePath(imageUrl)).toBe(imagePath);
+    });
+
+    it("decodes characters that getPublicUrl encoded", () => {
+      expect(pathOf(encodeURI(`${PUBLIC_URL}/badges/badge_image/my badge.png`))).toBe(
+        "badge_image/my badge.png",
+      );
+    });
+
+    it("ignores a query string", () => {
+      expect(pathOf(`${PUBLIC_URL}/badges/badge_image/a.png?download=`)).toBe(
+        "badge_image/a.png",
+      );
+    });
+
+    it("returns null for a signed URL", () => {
+      expect(
+        pathOf(
+          "https://example.supabase.co/storage/v1/object/sign/badges/badge_image/Trophy.png?token=abc",
+        ),
+      ).toBeNull();
+    });
+
+    it("returns null for another bucket, host or folder", () => {
+      expect(pathOf(`${PUBLIC_URL}/events/badge_image/a.png`)).toBeNull();
+      expect(
+        pathOf("https://elsewhere.example.com/storage/v1/object/public/badges/badge_image/a.png"),
+      ).toBeNull();
+      expect(pathOf(`${PUBLIC_URL}/badges/other/a.png`)).toBeNull();
+    });
+
+    it("returns null for a path that climbs out of the folder", () => {
+      expect(pathOf(`${PUBLIC_URL}/badges/badge_image/../secret.png`)).toBeNull();
+    });
+
+    it("returns null for the bare folder", () => {
+      expect(pathOf(`${PUBLIC_URL}/badges/badge_image/`)).toBeNull();
+    });
+
+    it("returns null for a malformed escape", () => {
+      expect(pathOf(`${PUBLIC_URL}/badges/badge_image/%E0%A4%A.png`)).toBeNull();
+    });
+
+    it("returns null when there is no URL", () => {
+      expect(pathOf(null)).toBeNull();
+      expect(pathOf(undefined)).toBeNull();
+      expect(pathOf("")).toBeNull();
+    });
+  });
+
+  describe("deleteBadgeImage", () => {
+    it("removes the file from the badges bucket", async () => {
+      const fake = fakeStorage();
+
+      await new BadgesService(fake.client).deleteBadgeImage("badge_image/a.png");
+
+      expect(fake.bucket).toHaveBeenCalledWith("badges");
+      expect(fake.remove).toHaveBeenCalledWith(["badge_image/a.png"]);
+    });
+
+    it("throws the storage error when the delete fails", async () => {
+      const fake = fakeStorage({ removeError: { message: "Access denied" } });
+
+      await expect(
+        new BadgesService(fake.client).deleteBadgeImage("badge_image/a.png"),
+      ).rejects.toMatchObject({ message: "Access denied" });
     });
   });
 });

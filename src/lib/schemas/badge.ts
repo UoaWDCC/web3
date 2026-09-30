@@ -25,9 +25,10 @@ const badgeFieldsSchema = z.object({
 // a default on `badgeFieldsSchema` would leak into `badgeUpdateSchema` and make
 // every patch silently overwrite the columns the caller never mentioned.
 //
-// The EVENT rule is early feedback only. A partial update can't check it in
-// isolation, since a patch may change `category` alone while `eventid` is
-// already set on the row, so the database constraint is the real guarantee.
+// The EVENT rule applies at creation only, and nothing in the database enforces
+// it. That is deliberate: deleting an event sets its badge's eventid to null
+// (ON DELETE SET NULL) and the badge stays EVENT, so an EVENT badge without an
+// event is a valid state afterwards. Hence no such rule on badgeUpdateSchema.
 const badgeInsertSchema = badgeFieldsSchema
   .extend({
     description: badgeFieldsSchema.shape.description.default(null),

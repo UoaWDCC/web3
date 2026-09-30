@@ -153,8 +153,58 @@ export default class BadgesService {
   }
 
   /**
+   * Recovers the storage path of a badge image from its `imageurl`, so the file
+   * can be deleted. badges has no path column, but a public URL is just the
+   * path appended to a fixed prefix.
+   *
+   * Only public URLs into this bucket's badge_image folder qualify. Anything
+   * else, such as an older signed URL or an image hosted elsewhere, returns
+   * `null`, so callers never delete a file this service didn't upload.
+   * @param imageUrl The badge's `imageurl`.
+   * @returns The storage path, or `null` if the URL isn't one of ours.
+   */
+  public getBadgeImagePath(imageUrl: string | null | undefined): string | null {
+    if (!imageUrl) return null;
+
+    // getPublicUrl builds encodeURI(`${storageUrl}/object/public/${bucket}/${path}`),
+    // so an empty path yields exactly the prefix every badge image URL shares.
+    const prefix = this.db.storage.from(IMAGE_BUCKET).getPublicUrl("").data
+      .publicUrl;
+    if (!imageUrl.startsWith(prefix)) return null;
+
+    let path: string;
+    try {
+      path = decodeURI(imageUrl.slice(prefix.length).split("?")[0]);
+    } catch {
+      return null;
+    }
+
+    const insideFolder =
+      path.startsWith(`${IMAGE_FOLDER}/`) &&
+      path.length > IMAGE_FOLDER.length + 1 &&
+      !path.split("/").includes("..");
+
+    return insideFolder ? path : null;
+  }
+
+  /**
+   * Deletes a badge image from storage.
+   * @param imagePath The storage path, as returned by {@link uploadBadgeImage}
+   * or {@link getBadgeImagePath}.
+   */
+  public async deleteBadgeImage(imagePath: string): Promise<void> {
+    const { error } = await this.db.storage
+      .from(IMAGE_BUCKET)
+      .remove([imagePath]);
+
+    if (error) throw error;
+  }
+
+  /**
    * Deletes a {@link Badge} by its ID. Any member_badges rows referencing it
-   * are removed too, via the foreign key's ON DELETE CASCADE.
+   * are removed too, via the foreign key's ON DELETE CASCADE (added in
+   * migration 20261001120000). The image file is not deleted; pass the badge's
+   * imageurl through {@link getBadgeImagePath} and {@link deleteBadgeImage}.
    * @param id The ID of the badge to delete.
    */
   public async deleteBadgeById(id: string): Promise<void> {
