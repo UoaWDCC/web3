@@ -20,6 +20,11 @@ type AdminEventSummary = {
   start_time: string;
 };
 
+type Attendee = {
+  id: number;
+  name: string;
+};
+
 const ADMIN_AUTH_STORAGE_KEY = "web3uoa.adminAuth";
 
 export default function AdminAttendancePage() {
@@ -40,6 +45,10 @@ export default function AdminAttendancePage() {
     alreadyCheckedIn: boolean;
   } | null>(null);
   const [scanError, setScanError] = useState("");
+  const [attendees, setAttendees] = useState<Attendee[]>([]);
+  const [attendeesLoading, setAttendeesLoading] = useState(false);
+  const [attendeesError, setAttendeesError] = useState("");
+  const [attendeesRefreshVersion, setAttendeesRefreshVersion] = useState(0);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const qrScannerRef = useRef<QrScanner | null>(null);
@@ -137,6 +146,44 @@ export default function AdminAttendancePage() {
     void fetchEvents(authHeader);
   }, [authHeader]);
 
+  useEffect(() => {
+    if (!authHeader || !checkinEventId) {
+      setAttendees([]);
+      setAttendeesError("");
+      setAttendeesLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setAttendeesLoading(true);
+    setAttendees([]);
+    setAttendeesError("");
+
+    fetch(
+      `/api/admin/checkin/attendees?eventId=${encodeURIComponent(checkinEventId)}`,
+      { headers: authHeader },
+    )
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to load attendees");
+        if (!cancelled) setAttendees(Array.isArray(data) ? data : []);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setAttendees([]);
+        setAttendeesError(
+          err instanceof Error ? err.message : "Failed to load attendees",
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setAttendeesLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authHeader, checkinEventId, attendeesRefreshVersion]);
+
   const authenticate = async () => {
     try {
       const headers = await signAdminAuth();
@@ -200,6 +247,22 @@ export default function AdminAttendancePage() {
         name: data.member.name,
         alreadyCheckedIn: data.alreadyCheckedIn,
       });
+
+      try {
+        const attendeesResponse = await fetch(
+          `/api/admin/checkin/attendees?eventId=${encodeURIComponent(checkinEventId)}`,
+          { headers: authHeader },
+        );
+        const attendeesData = await attendeesResponse.json();
+        if (!attendeesResponse.ok)
+          throw new Error(attendeesData.error || "Failed to refresh attendees");
+        setAttendees(Array.isArray(attendeesData) ? attendeesData : []);
+        setAttendeesError("");
+      } catch (err: unknown) {
+        setAttendeesError(
+          err instanceof Error ? err.message : "Failed to refresh attendees",
+        );
+      }
     } catch (err: any) {
       setScanError(err.message || "Check-in failed");
     } finally {
@@ -323,13 +386,17 @@ export default function AdminAttendancePage() {
             </option>
             {events.map((event) => (
               <option key={event.id} value={event.id}>
-                {event.title} ({new Date(event.start_time).toLocaleDateString()})
+                {event.title} ({new Date(event.start_time).toLocaleDateString()}
+                )
               </option>
             ))}
           </select>
 
           <div className="flex gap-2">
-            <Button onClick={openScanner} className="bg-blue-600 hover:bg-blue-700">
+            <Button
+              onClick={openScanner}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
               Scan Code
             </Button>
             <Button
@@ -355,6 +422,44 @@ export default function AdminAttendancePage() {
 
           {error && <p className="text-red-500 mt-3 text-sm">{error}</p>}
         </div>
+
+        {checkinEventId && (
+          <div className="mt-8 border-t border-border pt-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold text-black dark:text-white">
+                Attending ({attendees.length})
+              </h2>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  setAttendeesRefreshVersion((version) => version + 1)
+                }
+                disabled={attendeesLoading}
+              >
+                {attendeesLoading ? "Refreshing..." : "Refresh attendees"}
+              </Button>
+            </div>
+            {attendeesError && (
+              <p className="mt-3 text-sm text-red-500">{attendeesError}</p>
+            )}
+            {!attendeesError && attendees.length === 0 && (
+              <p className="mt-3 text-sm text-foreground/60">
+                {attendeesLoading
+                  ? "Loading attendees..."
+                  : "No attendees yet."}
+              </p>
+            )}
+            {attendees.length > 0 && (
+              <ul className="mt-3 divide-y divide-border">
+                {attendees.map((attendee) => (
+                  <li key={attendee.id} className="py-2 text-sm">
+                    {attendee.name}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </SectionCard>
 
       {scannerOpen && (
@@ -375,10 +480,13 @@ export default function AdminAttendancePage() {
                   autoPlay
                 />
                 <p className="text-sm text-foreground/60 text-center">
-                  Point the rear camera at the QR code. Scanning submits automatically.
+                  Point the rear camera at the QR code. Scanning submits
+                  automatically.
                 </p>
                 {scanError && (
-                  <p className="text-red-500 text-sm text-center">{scanError}</p>
+                  <p className="text-red-500 text-sm text-center">
+                    {scanError}
+                  </p>
                 )}
               </>
             )}
