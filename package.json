@@ -61,12 +61,12 @@
     "vitest": "^4.1.5"
   },
   "allowScripts": {
-    "@reown/appkit@1.8.19": true,
     "@tailwindcss/oxide": true,
     "bufferutil@4.1.0": true,
     "sharp@0.34.5": true,
     "utf-8-validate@6.0.6": true,
     "prisma@7.10.0": true,
-    "@prisma/engines@7.10.0": true
+    "@prisma/engines@7.10.0": true,
+    "@reown/appkit@1.8.24": true
   }
 }
