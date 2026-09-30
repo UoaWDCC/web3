@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getNames } from "@/lib/namestone";
+import { getNames } from "@/lib/namespace";
 import { verifyMessage } from "viem";
 import { isAllowedAdminAddress } from "@/lib/admin-auth";
 
