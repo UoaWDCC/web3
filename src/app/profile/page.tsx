@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import { useWallet } from "@/hooks/use-wallet";
 import { WalletButton } from "@/components/wallet-button";
 import { CheckCheck, Copy, PenTool } from "lucide-react";
@@ -10,7 +9,7 @@ import { useSignMessage } from "wagmi";
 import { ProfileVisibilityToggle } from "@/components/profile-visibility-toggle";
 import { IoQrCode } from "react-icons/io5";
 import QrCode from "qrcode";
-import { getSupabase } from "@/services/supabase";
+import { AttendedEvents } from "@/components/attended-events";
 
 const getErrorMessage = (error: unknown) => {
   if (error instanceof Error) {
@@ -24,25 +23,6 @@ const getErrorMessage = (error: unknown) => {
   return String(error);
 };
 
-const EVENT_THUMBNAIL_MAP: Record<string, string> = {
-  "launch night": "/images/Launchnight1.jpg",
-  "industry night": "/images/Industrynight1.jpg",
-  govdojo: "/images/GovDojo1.jpg",
-};
-
-const normalizeEventName = (eventName: string) =>
-  eventName.trim().toLowerCase();
-
-const getEventImage = (eventName: string) => {
-  const normalized = normalizeEventName(eventName);
-  if (normalized.includes("launch")) return EVENT_THUMBNAIL_MAP["launch night"];
-  if (normalized.includes("industry"))
-    return EVENT_THUMBNAIL_MAP["industry night"];
-  if (normalized.includes("govdojo") || normalized.includes("gov"))
-    return EVENT_THUMBNAIL_MAP.govdojo;
-  return "/images/Launchnight1.jpg";
-};
-
 export default function ProfilePage() {
   const { address, isConnected, disconnect, mounted } = useWallet();
   const { signMessageAsync } = useSignMessage();
@@ -52,9 +32,6 @@ export default function ProfilePage() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [badges, setBadges] = useState<string[]>([]);
   const [eventsAttended, setEventsAttended] = useState<string[]>([]);
-  const [eventDetails, setEventDetails] = useState<
-    Record<string, { title: string; eventUrl: string | null }>
-  >({});
   const [profileLoading, setProfileLoading] = useState(true);
   const [walletRegistered, setWalletRegistered] = useState(false);
   const [walletChecking, setWalletChecking] = useState(true);
@@ -195,46 +172,6 @@ export default function ProfilePage() {
   useEffect(() => {
     let cancelled = false;
 
-    const fetchAttendedEventDetails = async (attended: string[]) => {
-      if (attended.length === 0) return;
-
-      try {
-        const supabase = getSupabase();
-        const { data, error } = await supabase
-          .from("events")
-          .select("id,title,event_url")
-          .in("id", attended);
-
-        if (error) {
-          console.error("Failed to load attended event details", error);
-          return;
-        }
-
-        if (!cancelled && data) {
-          const details = data.reduce(
-            (
-              acc: Record<string, { title: string; eventUrl: string | null }>,
-              event,
-            ) => {
-              if (event.id) {
-                acc[event.id] = {
-                  title: event.title || event.id,
-                  eventUrl: event.event_url || null,
-                };
-              }
-              return acc;
-            },
-            {},
-          );
-          setEventDetails(details);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          console.error("Failed to load attended event images", error);
-        }
-      }
-    };
-
     const loadProfile = async () => {
       if (!address) {
         setWalletRegistered(false);
@@ -286,7 +223,6 @@ export default function ProfilePage() {
           setBadges(registration.badges || []);
           setEventsAttended(attended);
           setProfileVisible(registration.profile_visible ?? true);
-          await fetchAttendedEventDetails(attended);
         } else {
           setDisplayName("Name");
           setProfileImage(null);
@@ -615,53 +551,10 @@ export default function ProfilePage() {
           <p className="text-2xl font-bold">Events Attended</p>
 
           <div className="mt-8">
-            {profileLoading ? (
-              <p className="text-muted-foreground dark:text-white/70">
-                Loading event history…
-              </p>
-            ) : eventsAttended.length > 0 ? (
-              <div className="space-y-4">
-                {eventsAttended.map((eventId, index) => {
-                  const eventDetail = eventDetails[eventId];
-                  const eventName = eventDetail?.title || eventId;
-                  const eventUrl = eventDetail?.eventUrl;
-                  const eventImage = eventUrl ?? getEventImage(eventName);
-                  return (
-                    <div
-                      key={`${eventName}-${index}`}
-                      className="overflow-hidden rounded-3xl border border-primary/20 bg-white/95 shadow-sm dark:border-white/10 dark:bg-slate-900"
-                    >
-                      <div className="relative aspect-[16/9] w-full">
-                        {eventUrl ? (
-                          <img
-                            src={eventImage}
-                            alt={eventName}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <Image
-                            src={eventImage}
-                            alt={eventName}
-                            fill
-                            sizes="(max-width: 768px) 100vw, 33vw"
-                            className="object-cover"
-                          />
-                        )}
-                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent px-4 py-3">
-                          <p className="text-sm font-semibold text-white">
-                            {eventName}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-muted-foreground dark:text-white/70">
-                No events attended yet.
-              </p>
-            )}
+            <AttendedEvents
+              attendanceReferences={eventsAttended}
+              profileLoading={profileLoading}
+            />
           </div>
         </div>
       </div>
