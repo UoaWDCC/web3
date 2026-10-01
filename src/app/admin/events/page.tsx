@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Award, FilePlus2, Pencil, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Award, FilePlus2, Pencil, Trash2, Undo2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SectionCard } from "@/components/admin/section-card";
@@ -15,6 +15,17 @@ import {
   type BadgeDraft,
 } from "@/components/admin/badge-form-dialog";
 import { useAdmin } from "@/components/admin/use-admin";
+import type { Badge } from "@/lib/schemas/badge";
+import BadgesService from "@/services/badges/badges-service";
+
+/** Fills the badge form from a saved badge, for editing. */
+const draftFromBadge = (badge: Badge): BadgeDraft => ({
+  name: badge.name,
+  description: badge.description,
+  criteria: badge.criteria,
+  imageFile: null,
+  imagePreviewUrl: badge.imageurl,
+});
 
 const formatDateString = (value?: string | null) =>
   value ? new Date(value).toLocaleString() : "N/A";
@@ -51,6 +62,44 @@ export default function AdminEventsPage() {
   // creates the event and badge together, or neither.
   const [badgeDraft, setBadgeDraft] = useState<BadgeDraft | null>(null);
   const [badgeDialogOpen, setBadgeDialogOpen] = useState(false);
+  // Badges linked to an event, keyed by event id. badges.eventid is unique, so
+  // an event has at most one.
+  const [eventBadges, setEventBadges] = useState<Record<string, Badge>>({});
+  const [badgesError, setBadgesError] = useState<string | null>(null);
+  // The badge the event being edited already has, as saved.
+  const [existingBadge, setExistingBadge] = useState<Badge | null>(null);
+  // Set when the admin removes the existing badge: on save it is unlinked
+  // from the event (not deleted), so members keep what they earned.
+  const [unlinkBadge, setUnlinkBadge] = useState(false);
+
+  // Badges are public, so they are read directly rather than through an
+  // admin route. Reloaded whenever the event list is, i.e. after every save.
+  useEffect(() => {
+    let cancelled = false;
+
+    new BadgesService()
+      .getAllBadges()
+      .then((badges) => {
+        if (cancelled) return;
+
+        const byEvent: Record<string, Badge> = {};
+        for (const badge of badges) {
+          if (badge.eventid) byEvent[badge.eventid] = badge;
+        }
+        setEventBadges(byEvent);
+        setBadgesError(null);
+      })
+      .catch((error) => {
+        console.error("Failed to load badges", error);
+        if (!cancelled) {
+          setBadgesError("Couldn't load existing badges. Refresh before editing one.");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [events]);
 
   /** Clears every event field and leaves edit mode. Backs the Reset button. */
   const resetForm = () => {
@@ -68,6 +117,8 @@ export default function AdminEventsPage() {
     setImagePreviewUrl(null);
     setImageUrl(null);
     setBadgeDraft(null);
+    setExistingBadge(null);
+    setUnlinkBadge(false);
   };
 
   const createEvent = async () => {
@@ -94,7 +145,10 @@ export default function AdminEventsPage() {
 
       const payload: Record<string, unknown> = { event };
 
-      if (badgeDraft) {
+      if (unlinkBadge) {
+        payload.unlink_badge = true;
+      } else if (badgeDraft) {
+        // Creates the event's badge, or updates the one it already has.
         payload.badge = {
           name: badgeDraft.name,
           description: badgeDraft.description,
@@ -325,12 +379,37 @@ export default function AdminEventsPage() {
                     <Button
                       size="sm"
                       className={`${adminButtonClass} h-9 gap-1.5 px-3 text-sm !bg-[#DAF2FB]/60 dark:!bg-[#405084]/60`}
-                      onClick={() => setBadgeDraft(null)}
+                      onClick={() => {
+                        setBadgeDraft(null);
+                        // A saved badge is unlinked on save; an unsaved one
+                        // simply goes away.
+                        if (existingBadge) setUnlinkBadge(true);
+                      }}
                     >
                       <Trash2 className="size-3.5" />
                       Remove
                     </Button>
                   </div>
+                </div>
+              ) : unlinkBadge && existingBadge ? (
+                // Unlinking and adding a new badge can't happen in one save, so
+                // Add Badge waits until this one has been saved.
+                <div className="mt-2 flex flex-col items-start gap-3">
+                  <p className="text-sm text-black/70 dark:text-white/80">
+                    &ldquo;{existingBadge.name}&rdquo; will be removed from this
+                    event when you save. Members who earned it keep it.
+                  </p>
+                  <Button
+                    size="sm"
+                    className={`${adminButtonClass} h-9 gap-1.5 px-3 text-sm`}
+                    onClick={() => {
+                      setUnlinkBadge(false);
+                      setBadgeDraft(draftFromBadge(existingBadge));
+                    }}
+                  >
+                    <Undo2 className="size-3.5" />
+                    Undo
+                  </Button>
                 </div>
               ) : (
                 <Button
@@ -340,6 +419,12 @@ export default function AdminEventsPage() {
                   <Award className="size-4" />
                   Add Badge
                 </Button>
+              )}
+
+              {badgesError && (
+                <p className="mt-2 text-sm font-medium text-red-700 dark:text-red-200">
+                  {badgesError}
+                </p>
               )}
             </div>
           </div>
@@ -433,8 +518,14 @@ export default function AdminEventsPage() {
                     );
                     setImageUrl(ev.event_url || null);
                     setImagePreviewUrl(ev.event_url || null);
-                    // Don't carry a draft badge over from another event.
-                    setBadgeDraft(null);
+                    // Load this event's saved badge, if any, replacing any
+                    // draft left over from another event.
+                    const savedBadge = eventBadges[ev.id] ?? null;
+                    setExistingBadge(savedBadge);
+                    setBadgeDraft(
+                      savedBadge ? draftFromBadge(savedBadge) : null,
+                    );
+                    setUnlinkBadge(false);
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
                 >
