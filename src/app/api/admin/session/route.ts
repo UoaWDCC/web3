@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyMessage } from "viem";
-import { isAllowedAdminAddress } from "@/lib/admin-auth";
+import { isAdminAddress } from "@/lib/admin-auth-server";
 import { createAdminSessionToken } from "@/lib/admin-session-server";
 
 export async function POST(req: NextRequest) {
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!isAllowedAdminAddress(address)) {
+    if (!(await isAdminAddress(address))) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
