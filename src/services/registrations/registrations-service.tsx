@@ -20,7 +20,12 @@ export const RegistrationService = {
     const supabase = getSupabase();
     const { error } = await supabase
       .from("registrations")
-      .insert([registrationData]);
+      .insert([
+        {
+          ...registrationData,
+          email: registrationData.email.trim().toLowerCase(),
+        },
+      ]);
 
     if (error) {
       throw error;

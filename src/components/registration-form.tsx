@@ -30,12 +30,12 @@ export function RegistrationForm() {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
     reset,
     watch,
     setValue,
     clearErrors,
-    setError
+    setError,
   } = useForm<RegistrationData>({
     resolver: zodResolver(RegistrationSchema),
   });
@@ -92,27 +92,31 @@ export function RegistrationForm() {
 
   /**
    * Handles the form submission.
-   * Validates the form data, checks if the email is already taken,
-   * submits the registration data, and resets the form.
+   * Validates and submits the registration data, then resets the form.
+   * Email uniqueness is enforced atomically by the database.
    *
    * @param {RegistrationData} data - The validated form data.
    */
   const onSubmit: SubmitHandler<RegistrationData> = async (data) => {
     try {
-      const emailTaken = await RegistrationService.isEmailTaken(data.email);
-      if (emailTaken) {
-        setError("email", {
-          type: "custom",
-          message: "This email is already registered",
-        });
-        return;
-      }
-
       await RegistrationService.submitRegistration(data);
 
       reset();
       setFinishedForm(true);
     } catch (error) {
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        error.code === "23505"
+      ) {
+        setError("email", {
+          type: "server",
+          message: "This email is already registered",
+        });
+        return;
+      }
+
       console.error("Unable to submit registration", error);
       setError("root", {
         type: "server",
@@ -271,11 +275,12 @@ export function RegistrationForm() {
 
           <Button
             type="submit"
+            disabled={isSubmitting}
             variant="pill"
             size="lg"
             className="text-base px-13 h-12 rounded-2xl mt-5"
           >
-            Submit
+            {isSubmitting ? "Submitting..." : "Submit"}
           </Button>
         </form>
       )}
