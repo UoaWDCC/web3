@@ -6,10 +6,14 @@ import {
   PublicProfilesService,
   type PublicProfile,
 } from "@/services/public-profiles-service";
+import MemberBadgesService from "@/services/member-badges/member-badges-service";
+import type { MemberBadgeWithBadge } from "@/lib/schemas/member-badge";
+import { BadgeCard } from "@/components/badge-card";
 
 export default function PublicProfilePage() {
   const { id } = useParams<{ id: string }>();
   const [profile, setProfile] = useState<PublicProfile | null>(null);
+  const [badges, setBadges] = useState<MemberBadgeWithBadge[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,6 +32,20 @@ export default function PublicProfilePage() {
 
           if (!publicProfile) {
             setError("This public profile could not be found.");
+          }
+        }
+
+        // The route param is a public_profiles uuid, but member_badges is keyed
+        // on registrations.id, so the badges hang off registration_id. Fetched
+        // separately so a badge failure still leaves the profile readable.
+        if (publicProfile) {
+          try {
+            const awards = await new MemberBadgesService().getBadgesForMember(
+              publicProfile.registration_id,
+            );
+            if (!cancelled) setBadges(awards);
+          } catch (badgeError) {
+            console.error("Unable to load badges", badgeError);
           }
         }
       } catch (profileError) {
@@ -108,22 +126,15 @@ export default function PublicProfilePage() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-10 w-full max-w-[90vw] lg:flex-row lg:justify-center lg:items-end lg:gap-16">
-        <div className="bg-white/80 w-full lg:w-[42vw] p-8 rounded-2xl min-h-[44vh] lg:min-h-[34vh] lg:mt-10 shadow-lg dark:bg-[#404246]/85 dark:shadow-black/20">
+      <div className="flex flex-col gap-10 w-full max-w-[90vw] lg:flex-row lg:justify-center lg:items-start lg:gap-16">
+        <div className="bg-white/80 w-full lg:w-[42vw] p-8 rounded-2xl min-h-[44vh] lg:min-h-[34vh] shadow-lg dark:bg-[#404246]/85 dark:shadow-black/20">
           <p className="text-2xl font-bold">Badges</p>
 
           <div className="mt-8">
-            {profile.badges.length > 0 ? (
+            {badges.length > 0 ? (
               <div className="grid grid-cols-3 gap-4 sm:gap-6 justify-items-center">
-                {profile.badges.map((badge, index) => (
-                  <div
-                    key={`${badge}-${index}`}
-                    className="w-full min-h-[5rem] rounded-3xl border border-primary/20 bg-primary/5 p-3 flex items-center justify-center text-center dark:border-[#A3DEF4]/25 dark:bg-white/10"
-                  >
-                    <span className="text-sm font-semibold text-primary dark:text-[#A3DEF4]">
-                      {badge}
-                    </span>
-                  </div>
+                {badges.map((award) => (
+                  <BadgeCard key={award.id} award={award} />
                 ))}
               </div>
             ) : (
