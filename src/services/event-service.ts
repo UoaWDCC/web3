@@ -230,4 +230,43 @@ export const EventService = {
 
     return { event: result.event, badge: result.badge };
   },
+
+  /**
+   * Deletes an event and then its image file.
+   *
+   * The event's badge is kept: badges_eventid_fkey is ON DELETE SET NULL, so
+   * it is unlinked and members keep what they earned. Its image stays too,
+   * since the badge still uses it.
+   *
+   * @param client A client allowed to delete events, i.e. the service-role
+   * client.
+   * @returns The deleted event.
+   */
+  deleteEvent: async (
+    client: SupabaseClient,
+    id: string,
+  ): Promise<ClubEvent> => {
+    const { data, error } = await client
+      .from("events")
+      .delete()
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    const event = data as ClubEvent;
+
+    // Only delete paths inside the folder uploads go to, in case an older row
+    // points somewhere else in the bucket.
+    const imagePath = event.event_path;
+    if (imagePath?.startsWith(`${EVENT_IMAGE_FOLDER}/`)) {
+      await cleanUpQuietly(
+        [() => EventService.deleteEventImage(imagePath, client)],
+        "Failed to delete the image of a deleted event",
+      );
+    }
+
+    return event;
+  },
 };

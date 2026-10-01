@@ -270,7 +270,8 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-// DELETE - delete event by id
+// DELETE - delete event by id, along with its image file. Its badge is kept
+// but unlinked (ON DELETE SET NULL), so members keep what they earned.
 export async function DELETE(req: NextRequest) {
   const isAuth = await verifyAdminAuth(req);
   if (!isAuth)
@@ -288,22 +289,18 @@ export async function DELETE(req: NextRequest) {
 
     if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
-    const supabase = getSupabase();
-    const { data, error } = await supabase
-      .from("events")
-      .delete()
-      .eq("id", id)
-      .select()
-      .single();
+    const event = await EventService.deleteEvent(getSupabaseAdmin(), id);
 
-    if (error)
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ event });
+  } catch (err: unknown) {
+    const code = (err as { code?: string } | null)?.code;
+    const message =
+      (err as { message?: string } | null)?.message || "Failed to delete event";
 
-    return NextResponse.json({ event: data });
-  } catch (err: any) {
-    return NextResponse.json(
-      { error: err.message || "Failed" },
-      { status: 500 },
-    );
+    // PGRST116: .single() matched no row, i.e. there is no event with that id.
+    // 22P02: the id isn't a valid uuid.
+    const status = code === "PGRST116" ? 404 : code === "22P02" ? 400 : 500;
+
+    return NextResponse.json({ error: message }, { status });
   }
 }
