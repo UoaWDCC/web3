@@ -44,6 +44,15 @@ const badgeInsertSchema = badgeFieldsSchema
 
 const badgeUpdateSchema = badgeFieldsSchema.partial();
 
+// The badge half of an event save (PUT /api/admin/events). category and eventid
+// are absent because save_event_with_badge sets them itself, and imageurl is
+// absent because it only ever comes from an image the route uploaded — so it is
+// always a URL that getBadgeImagePath can map back to a file for cleanup.
+// An omitted optional field keeps its current value when updating.
+const eventBadgeSchema = badgeFieldsSchema
+  .pick({ name: true, description: true, criteria: true, isactive: true })
+  .partial({ description: true, criteria: true, isactive: true });
+
 const badgeSchema = badgeFieldsSchema.extend({
   id: z.uuid(),
   created_at: z.string(),
@@ -55,5 +64,7 @@ export type Badge = z.infer<typeof badgeSchema>;
 export type BadgeInsert = z.input<typeof badgeInsertSchema>;
 /** A partial patch accepted by `updateBadgeById`. */
 export type BadgeUpdate = z.input<typeof badgeUpdateSchema>;
+/** The badge fields an admin fills in alongside an event. */
+export type EventBadge = z.infer<typeof eventBadgeSchema>;
 
-export { badgeSchema, badgeInsertSchema, badgeUpdateSchema };
+export { badgeSchema, badgeInsertSchema, badgeUpdateSchema, eventBadgeSchema };
