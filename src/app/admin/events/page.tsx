@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FilePlus2 } from "lucide-react";
+import { Award, FilePlus2, Pencil, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SectionCard } from "@/components/admin/section-card";
@@ -10,6 +10,10 @@ import {
   adminButtonClass,
   adminInputClass,
 } from "@/components/admin/admin-field";
+import {
+  BadgeFormDialog,
+  type BadgeDraft,
+} from "@/components/admin/badge-form-dialog";
 import { useAdmin } from "@/components/admin/use-admin";
 
 const formatDateString = (value?: string | null) =>
@@ -41,9 +45,12 @@ export default function AdminEventsPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [imageUploading, setImageUploading] = useState(false);
-  const [imageError, setImageError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  // The badge only exists here until the event is saved; the server then
+  // creates the event and badge together, or neither.
+  const [badgeDraft, setBadgeDraft] = useState<BadgeDraft | null>(null);
+  const [badgeDialogOpen, setBadgeDialogOpen] = useState(false);
 
   /** Clears every event field and leaves edit mode. Backs the Reset button. */
   const resetForm = () => {
@@ -60,69 +67,40 @@ export default function AdminEventsPage() {
     setImageFile(null);
     setImagePreviewUrl(null);
     setImageUrl(null);
-    setImageError(null);
-  };
-
-  const uploadImage = async (): Promise<{
-    event_path: string;
-    event_url: string;
-  } | null> => {
-    if (!imageFile) return null;
-    setImageError(null);
-    setImageUploading(true);
-
-    try {
-      const formData = new FormData();
-      formData.append("image", imageFile);
-
-      const res = await adminFetch("/api/admin/events/image", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Unknown error" }));
-        throw new Error(err.error || "Failed to upload image");
-      }
-
-      return await res.json();
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      setImageError(message || "Image upload failed");
-      return null;
-    } finally {
-      setImageUploading(false);
-    }
+    setBadgeDraft(null);
   };
 
   const createEvent = async () => {
+    setSaving(true);
     try {
-      let uploadedImage: { event_path: string; event_url: string } | null =
-        null;
-      if (imageFile) {
-        uploadedImage = await uploadImage();
-        if (!uploadedImage) {
-          throw new Error("Unable to upload image before saving event");
-        }
-      }
-
-      const payload: Record<string, unknown> = {
+      const event: Record<string, unknown> = {
         title,
         description,
         location: location.trim() || null,
         capacity: capacity.trim() ? Number(capacity) : null,
         start_time: startTime ? new Date(startTime).toISOString() : null,
         end_time: endTime ? new Date(endTime).toISOString() : null,
-        event_url: uploadedImage?.event_url ?? imageUrl,
-        event_path: uploadedImage?.event_path ?? undefined,
+        // Keeps the current image when no new file is chosen. A new file is
+        // sent as event_image below and replaces both URL and path.
+        event_url: imageUrl,
       };
 
-      if (editingId) payload.id = editingId;
+      if (editingId) event.id = editingId;
 
       if (checkInOpen)
-        payload.check_in_open_time = new Date(checkInOpen).toISOString();
+        event.check_in_open_time = new Date(checkInOpen).toISOString();
       if (checkInClose)
-        payload.check_in_close_time = new Date(checkInClose).toISOString();
+        event.check_in_close_time = new Date(checkInClose).toISOString();
+
+      const payload: Record<string, unknown> = { event };
+
+      if (badgeDraft) {
+        payload.badge = {
+          name: badgeDraft.name,
+          description: badgeDraft.description,
+          criteria: badgeDraft.criteria,
+        };
+      }
 
       const assigned = assignedEmailsText
         .split(",")
@@ -130,9 +108,17 @@ export default function AdminEventsPage() {
         .filter(Boolean);
       if (assigned.length) payload.assignedEmails = assigned;
 
+      // One request carries the event, the badge and both images, so the
+      // server can save all of it or none of it.
+      const formData = new FormData();
+      formData.append("payload", JSON.stringify(payload));
+      if (imageFile) formData.append("event_image", imageFile);
+      if (badgeDraft?.imageFile)
+        formData.append("badge_image", badgeDraft.imageFile);
+
       const res = await adminFetch("/api/admin/events", {
         method: "PUT",
-        body: JSON.stringify(payload),
+        body: formData,
       });
 
       if (!res.ok) {
@@ -146,8 +132,12 @@ export default function AdminEventsPage() {
       fetchData();
       alert(wasEditing ? "Event saved" : "Event created");
     } catch (err: unknown) {
+      // The form is left as it was, badge included, so the admin can fix the
+      // problem and try again. Nothing was saved.
       const message = err instanceof Error ? err.message : String(err);
       alert(message || "Failed to create event");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -262,61 +252,118 @@ export default function AdminEventsPage() {
             />
           </AdminField>
 
-          <div>
-            <span className="block text-sm font-bold text-black dark:text-white">
-              Event Image
-            </span>
-            {/* Native input is hidden; the label is the visible button. */}
-            <label
-              className={`${adminButtonClass} mt-2 inline-flex h-10 cursor-pointer items-center gap-2 px-4 text-sm`}
-            >
-              <FilePlus2 className="size-4" />
-              {imageFile ? "Change File" : "Add File"}
-              <input
-                type="file"
-                accept="image/*"
-                className="sr-only"
-                onChange={(e) => {
-                  const file = e.target.files?.[0] ?? null;
-                  setImageFile(file);
-                  setImageError(null);
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <span className="block text-sm font-bold text-black dark:text-white">
+                Event Image
+              </span>
+              {/* Native input is hidden; the label is the visible button. */}
+              <label
+                className={`${adminButtonClass} mt-2 inline-flex h-10 cursor-pointer items-center gap-2 px-4 text-sm`}
+              >
+                <FilePlus2 className="size-4" />
+                {imageFile ? "Change File" : "Add File"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] ?? null;
+                    setImageFile(file);
 
-                  if (file) {
-                    setImagePreviewUrl(URL.createObjectURL(file));
-                  } else {
-                    setImagePreviewUrl(imageUrl);
-                  }
-                }}
-              />
-            </label>
+                    if (file) {
+                      setImagePreviewUrl(URL.createObjectURL(file));
+                    } else {
+                      setImagePreviewUrl(imageUrl);
+                    }
+                  }}
+                />
+              </label>
 
-            {imagePreviewUrl && (
-              <img
-                src={imagePreviewUrl}
-                alt="Event preview"
-                className="mt-3 h-40 w-full rounded-xl object-cover"
-              />
-            )}
-            {imageError && (
-              <p className="mt-2 text-sm font-medium text-red-700 dark:text-red-200">
-                {imageError}
-              </p>
-            )}
+              {imagePreviewUrl && (
+                <img
+                  src={imagePreviewUrl}
+                  alt="Event preview"
+                  className="mt-3 h-40 w-full rounded-xl object-cover"
+                />
+              )}
+            </div>
+
+            <div>
+              <span className="block text-sm font-bold text-black dark:text-white">
+                Event Badge (optional)
+              </span>
+
+              {badgeDraft ? (
+                <div className="mt-2 flex flex-col items-start gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#DAF2FB] dark:bg-[#3F58AA]">
+                      {badgeDraft.imagePreviewUrl ? (
+                        <img
+                          src={badgeDraft.imagePreviewUrl}
+                          alt={`${badgeDraft.name} badge`}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <Award className="size-7 text-web3" />
+                      )}
+                    </div>
+                    <p className="font-bold break-words text-black dark:text-white">
+                      {badgeDraft.name}
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      className={`${adminButtonClass} h-9 gap-1.5 px-3 text-sm`}
+                      onClick={() => setBadgeDialogOpen(true)}
+                    >
+                      <Pencil className="size-3.5" />
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      className={`${adminButtonClass} h-9 gap-1.5 px-3 text-sm !bg-[#DAF2FB]/60 dark:!bg-[#405084]/60`}
+                      onClick={() => setBadgeDraft(null)}
+                    >
+                      <Trash2 className="size-3.5" />
+                      Remove
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  className={`${adminButtonClass} mt-2 h-10 gap-2 px-4 text-sm`}
+                  onClick={() => setBadgeDialogOpen(true)}
+                >
+                  <Award className="size-4" />
+                  Add Badge
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
+      {badgeDialogOpen && (
+        <BadgeFormDialog
+          initial={badgeDraft}
+          onSave={(draft) => {
+            setBadgeDraft(draft);
+            setBadgeDialogOpen(false);
+          }}
+          onCancel={() => setBadgeDialogOpen(false)}
+        />
+      )}
+
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <Button
           onClick={createEvent}
-          disabled={imageUploading}
+          disabled={saving}
           className={adminButtonClass}
         >
-          {imageUploading
-            ? "Uploading..."
-            : editingId
-              ? "Save Event"
-              : "Create Event"}
+          {saving ? "Saving..." : editingId ? "Save Event" : "Create Event"}
         </Button>
         <Button
           onClick={resetForm}
@@ -386,6 +433,8 @@ export default function AdminEventsPage() {
                     );
                     setImageUrl(ev.event_url || null);
                     setImagePreviewUrl(ev.event_url || null);
+                    // Don't carry a draft badge over from another event.
+                    setBadgeDraft(null);
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
                 >
