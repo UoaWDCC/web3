@@ -7,8 +7,7 @@ import MemberBadgesService from "./member-badges-service";
 
 const AWARD_ID = "9c1d7b3e-5a2f-4e18-b7d0-2c6a4f9e8b11";
 const BADGE_ID = "3f7c1e2a-1b4d-4c6f-9a2e-8d5b0c7f1a33";
-const MEMBER_ID = "5e8a2c4b-6d31-4f97-a02e-1b7c9d4e6f85";
-const ATTENDANCE_ID = "7b2e4d19-3c8a-4f52-9e61-0a3d5c8b7f24";
+const MEMBER_ID = 42;
 
 type MockFn = ReturnType<typeof vi.fn>;
 
@@ -73,7 +72,6 @@ function awardRow(overrides: Partial<MemberBadge> = {}): MemberBadge {
     awardedat: "2026-08-03T00:00:00+00:00",
     badgeid: BADGE_ID,
     memberid: MEMBER_ID,
-    attendanceid: null,
     ...overrides,
   };
 }
@@ -107,7 +105,7 @@ describe("MemberBadgesService", () => {
       expect(award.id).toBe(AWARD_ID);
     });
 
-    it("defaults attendanceid to null when the caller omits it", async () => {
+    it("inserts just the badge and the member", async () => {
       const fake = fakeSupabase({ data: awardRow(), error: null });
 
       await new MemberBadgesService(fake.client).awardBadge({
@@ -118,28 +116,7 @@ describe("MemberBadgesService", () => {
       expect(fake.builder.insert).toHaveBeenCalledWith({
         badgeid: BADGE_ID,
         memberid: MEMBER_ID,
-        attendanceid: null,
       });
-    });
-
-    it("passes an attendance id through when one is given", async () => {
-      const fake = fakeSupabase({
-        data: awardRow({ attendanceid: ATTENDANCE_ID }),
-        error: null,
-      });
-
-      const award = await new MemberBadgesService(fake.client).awardBadge({
-        badgeid: BADGE_ID,
-        memberid: MEMBER_ID,
-        attendanceid: ATTENDANCE_ID,
-      });
-
-      expect(fake.builder.insert).toHaveBeenCalledWith({
-        badgeid: BADGE_ID,
-        memberid: MEMBER_ID,
-        attendanceid: ATTENDANCE_ID,
-      });
-      expect(award.attendanceid).toBe(ATTENDANCE_ID);
     });
 
     it("never sends an id or awardedat — the database generates those", async () => {
@@ -168,15 +145,15 @@ describe("MemberBadgesService", () => {
       expect(fake.from).not.toHaveBeenCalled();
     });
 
-    it("rejects a memberid passed as a registrations-style bigint", async () => {
+    it("rejects a memberid passed as a public_profiles uuid", async () => {
       const fake = fakeSupabase({ data: null, error: null });
 
       await expect(
         new MemberBadgesService(fake.client).awardBadge({
           badgeid: BADGE_ID,
-          // memberid is a public_profiles uuid, not registrations.id — this is
+          // memberid is registrations.id, not a public_profiles uuid — this is
           // the confusion the schema guards against.
-          memberid: 99 as unknown as string,
+          memberid: "5e8a2c4b-6d31-4f97-a02e-1b7c9d4e6f85" as unknown as number,
         }),
       ).rejects.toThrow();
 
