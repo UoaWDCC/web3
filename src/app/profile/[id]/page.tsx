@@ -9,6 +9,7 @@ import {
 import MemberBadgesService from "@/services/member-badges/member-badges-service";
 import type { MemberBadgeWithBadge } from "@/lib/schemas/member-badge";
 import { BadgeCard } from "@/components/badge-card";
+import { AttendedEvents } from "@/components/attended-events";
 
 export default function PublicProfilePage() {
   const { id } = useParams<{ id: string }>();
@@ -149,22 +150,7 @@ export default function PublicProfilePage() {
           <p className="text-2xl font-bold">Events Attended</p>
 
           <div className="mt-8">
-            {profile.events_attended.length > 0 ? (
-              <div className="space-y-4">
-                {profile.events_attended.map((eventName, index) => (
-                  <div
-                    key={`${eventName}-${index}`}
-                    className="rounded-3xl bg-primary/10 px-4 py-4 sm:px-6 sm:py-5 dark:bg-white/10"
-                  >
-                    <p className="font-semibold text-lg">{eventName}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground dark:text-white/70">
-                No events attended yet.
-              </p>
-            )}
+            <AttendedEvents attendanceReferences={profile.events_attended} />
           </div>
         </div>
       </div>

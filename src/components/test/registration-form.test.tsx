@@ -2,7 +2,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { RegistrationForm } from "../registration-form";
@@ -162,9 +162,7 @@ describe("RegistrationForm", () => {
 
   it("clears fields that disappear when switching from UOA to NONE", async () => {
     const user = userEvent.setup();
-    mockedRegistrationService.isEmailTaken.mockResolvedValue(false);
     mockedRegistrationService.submitRegistration.mockResolvedValue(undefined);
-    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => undefined);
 
     renderForm();
 
@@ -183,9 +181,6 @@ describe("RegistrationForm", () => {
     await selectUniversity(user, "NONE");
     await user.click(screen.getByRole("button", { name: /submit/i }));
 
-    expect(mockedRegistrationService.isEmailTaken).toHaveBeenCalledWith(
-      "ada@example.com",
-    );
     expect(mockedRegistrationService.submitRegistration).toHaveBeenCalledWith(
       expect.objectContaining({
         university: "NONE",
@@ -196,13 +191,16 @@ describe("RegistrationForm", () => {
         university_other: null,
       }),
     );
-    expect(alertSpy).toHaveBeenCalledWith("Form submitted successfully!");
+    expect(
+      await screen.findByText(/welcome, you've joined web3/i),
+    ).toBeInTheDocument();
   });
 
-  it("stops submission when the email is already taken", async () => {
+  it("shows an email error when the atomic insert rejects a duplicate", async () => {
     const user = userEvent.setup();
-    mockedRegistrationService.isEmailTaken.mockResolvedValue(true);
-    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => undefined);
+    mockedRegistrationService.submitRegistration.mockRejectedValue({
+      code: "23505",
+    });
 
     renderForm();
 
@@ -213,18 +211,16 @@ describe("RegistrationForm", () => {
 
     await user.click(screen.getByRole("button", { name: /submit/i }));
 
-    expect(mockedRegistrationService.isEmailTaken).toHaveBeenCalledWith(
-      "taken@example.com",
-    );
-    expect(mockedRegistrationService.submitRegistration).not.toHaveBeenCalled();
-    expect(alertSpy).toHaveBeenCalledWith("Email is already taken");
+    expect(mockedRegistrationService.isEmailTaken).not.toHaveBeenCalled();
+    expect(mockedRegistrationService.submitRegistration).toHaveBeenCalledTimes(1);
+    expect(
+      await screen.findByText(/this email is already registered/i),
+    ).toBeInTheDocument();
   });
 
   it("submits successfully when the email is available", async () => {
     const user = userEvent.setup();
-    mockedRegistrationService.isEmailTaken.mockResolvedValue(false);
     mockedRegistrationService.submitRegistration.mockResolvedValue(undefined);
-    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => undefined);
 
     renderForm();
 
@@ -235,10 +231,43 @@ describe("RegistrationForm", () => {
 
     await user.click(screen.getByRole("button", { name: /submit/i }));
 
-    expect(mockedRegistrationService.isEmailTaken).toHaveBeenCalledWith(
-      "ok@example.com",
-    );
+    expect(mockedRegistrationService.isEmailTaken).not.toHaveBeenCalled();
     expect(mockedRegistrationService.submitRegistration).toHaveBeenCalledTimes(1);
-    expect(alertSpy).toHaveBeenCalledWith("Form submitted successfully!");
+    expect(
+      await screen.findByText(/welcome, you've joined web3/i),
+    ).toBeInTheDocument();
+  });
+
+  it("prevents repeat submissions while the insert is pending", async () => {
+    const user = userEvent.setup();
+    let finishSubmission: (() => void) | undefined;
+
+    mockedRegistrationService.submitRegistration.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          finishSubmission = resolve;
+        }),
+    );
+
+    renderForm();
+
+    await user.type(screen.getByPlaceholderText(/first name/i), "Ada");
+    await user.type(screen.getByPlaceholderText(/last name/i), "Lovelace");
+    await user.type(screen.getByPlaceholderText(/email/i), "ok@example.com");
+    await selectUniversity(user, "NONE");
+
+    const submitButton = screen.getByRole("button", { name: /submit/i });
+    await user.click(submitButton);
+
+    await waitFor(() => expect(submitButton).toBeDisabled());
+    await user.click(submitButton);
+
+    expect(mockedRegistrationService.submitRegistration).toHaveBeenCalledTimes(1);
+
+    finishSubmission?.();
+
+    expect(
+      await screen.findByText(/welcome, you've joined web3/i),
+    ).toBeInTheDocument();
   });
 });
