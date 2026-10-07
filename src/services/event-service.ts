@@ -17,8 +17,8 @@ export type SaveEventWithBadgeInput = {
   event: Partial<ClubEvent>;
   /** Create or update the event's badge. Omit to leave it as it is. */
   badge?: EventBadge | null;
-  /** Detach the event's current badge without deleting it. */
-  unlinkBadge?: boolean;
+  /** Delete the event's current badge, and every member's award of it. */
+  removeBadge?: boolean;
   /** A new event image, replacing any current one. */
   eventImage?: File | null;
   /** A new badge image, replacing any current one. Requires `badge`. */
@@ -31,6 +31,7 @@ type SaveEventWithBadgeResult = {
   badge: Badge | null;
   replaced_event_path: string | null;
   replaced_badge_imageurl: string | null;
+  removed_badge_imageurl: string | null;
 };
 
 /**
@@ -145,7 +146,7 @@ export const EventService = {
    * Images are uploaded first, since the rows store their URLs. If anything
    * after that fails, the files uploaded here are deleted again, so a failed
    * save leaves nothing behind. After a successful save, any image this save
-   * replaced is deleted too.
+   * replaced, or that belonged to a badge it removed, is deleted too.
    *
    * @param client A client allowed to call save_event_with_badge, i.e. the
    * service-role client. The function is not executable by anon.
@@ -155,7 +156,7 @@ export const EventService = {
     {
       event,
       badge = null,
-      unlinkBadge = false,
+      removeBadge = false,
       eventImage = null,
       badgeImage = null,
     }: SaveEventWithBadgeInput,
@@ -192,7 +193,7 @@ export const EventService = {
       const { data, error } = await client.rpc("save_event_with_badge", {
         p_event: eventPayload,
         p_badge: badgePayload,
-        p_unlink_badge: unlinkBadge,
+        p_remove_badge: removeBadge,
       });
 
       if (error) throw error;
@@ -216,27 +217,30 @@ export const EventService = {
       );
     }
 
-    const replacedBadgePath = badges.getBadgeImagePath(
+    for (const imageUrl of [
       result.replaced_badge_imageurl,
-    );
-    if (replacedBadgePath) {
-      replacedCleanups.push(() => badges.deleteBadgeImage(replacedBadgePath));
+      result.removed_badge_imageurl,
+    ]) {
+      const badgePath = badges.getBadgeImagePath(imageUrl);
+      if (badgePath) {
+        replacedCleanups.push(() => badges.deleteBadgeImage(badgePath));
+      }
     }
 
     await cleanUpQuietly(
       replacedCleanups,
-      "Failed to delete an image replaced by an event save",
+      "Failed to delete an image replaced or removed by an event save",
     );
 
     return { event: result.event, badge: result.badge };
   },
 
   /**
-   * Deletes an event and then its image file.
+   * Deletes an event, its badge, and then their image files.
    *
-   * The event's badge is kept: badges_eventid_fkey is ON DELETE SET NULL, so
-   * it is unlinked and members keep what they earned. Its image stays too,
-   * since the badge still uses it.
+   * The badge goes with the event: badges_eventid_fkey is ON DELETE CASCADE,
+   * and so is member_badges_badgeid_fkey, so every member's award of it is
+   * deleted too. All of that happens in the one delete statement.
    *
    * @param client A client allowed to delete events, i.e. the service-role
    * client.
@@ -246,6 +250,16 @@ export const EventService = {
     client: SupabaseClient,
     id: string,
   ): Promise<ClubEvent> => {
+    // Read first: once the cascade has run, the badge row and the URL of its
+    // image are gone.
+    const { data: badge, error: badgeError } = await client
+      .from("badges")
+      .select("imageurl")
+      .eq("eventid", id)
+      .maybeSingle();
+
+    if (badgeError) throw badgeError;
+
     const { data, error } = await client
       .from("events")
       .delete()
@@ -256,16 +270,25 @@ export const EventService = {
     if (error) throw error;
 
     const event = data as ClubEvent;
+    const cleanups: Array<() => Promise<void>> = [];
 
     // Only delete paths inside the folder uploads go to, in case an older row
     // points somewhere else in the bucket.
     const imagePath = event.event_path;
     if (imagePath?.startsWith(`${EVENT_IMAGE_FOLDER}/`)) {
-      await cleanUpQuietly(
-        [() => EventService.deleteEventImage(imagePath, client)],
-        "Failed to delete the image of a deleted event",
-      );
+      cleanups.push(() => EventService.deleteEventImage(imagePath, client));
     }
+
+    const badges = new BadgesService(client);
+    const badgeImagePath = badges.getBadgeImagePath(badge?.imageurl);
+    if (badgeImagePath) {
+      cleanups.push(() => badges.deleteBadgeImage(badgeImagePath));
+    }
+
+    await cleanUpQuietly(
+      cleanups,
+      "Failed to delete an image of a deleted event or its badge",
+    );
 
     return event;
   },

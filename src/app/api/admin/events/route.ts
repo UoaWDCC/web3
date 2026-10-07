@@ -91,10 +91,10 @@ function imageField(formData: FormData, name: string): File | null {
  * Reads the request in either of the two shapes it may take:
  *
  * - multipart/form-data: a `payload` field holding JSON
- *   `{ event, badge?, unlink_badge?, assignedEmails? }`, plus optional
- *   `event_image` and `badge_image` files. Used by the badge-aware form.
+ *   `{ event, badge?, remove_badge?, assignedEmails? }`, plus optional
+ *   `event_image` and `badge_image` files. Used by the admin event form.
  * - JSON: the flat event fields plus `assignedEmails`, as sent before badges
- *   existed. It has no badge support and its images are uploaded separately.
+ *   existed. It has no badge or image upload support.
  */
 async function readSaveRequest(req: NextRequest) {
   const contentType = req.headers.get("content-type") ?? "";
@@ -118,7 +118,7 @@ async function readSaveRequest(req: NextRequest) {
       throw new BadRequestError("payload must be a JSON object");
     }
 
-    const { event, badge, unlink_badge, assignedEmails } = body as Record<
+    const { event, badge, remove_badge, assignedEmails } = body as Record<
       string,
       unknown
     >;
@@ -126,7 +126,7 @@ async function readSaveRequest(req: NextRequest) {
     return {
       event,
       badge,
-      unlinkBadge: unlink_badge === true,
+      removeBadge: remove_badge === true,
       assignedEmails,
       eventImage: imageField(formData, "event_image"),
       badgeImage: imageField(formData, "badge_image"),
@@ -142,7 +142,7 @@ async function readSaveRequest(req: NextRequest) {
   return {
     event,
     badge: null,
-    unlinkBadge: false,
+    removeBadge: false,
     assignedEmails,
     eventImage: null,
     badgeImage: null,
@@ -195,9 +195,9 @@ export async function PUT(req: NextRequest) {
     const badge =
       request.badge == null ? null : eventBadgeSchema.parse(request.badge);
 
-    if (badge && request.unlinkBadge) {
+    if (badge && request.removeBadge) {
       throw new BadRequestError(
-        "Cannot save a badge and unlink it in the same request",
+        "Cannot save a badge and remove it in the same request",
       );
     }
 
@@ -222,7 +222,7 @@ export async function PUT(req: NextRequest) {
         capacity,
       },
       badge,
-      unlinkBadge: request.unlinkBadge,
+      removeBadge: request.removeBadge,
       eventImage: request.eventImage,
       badgeImage: request.badgeImage,
     });
@@ -270,8 +270,8 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-// DELETE - delete event by id, along with its image file. Its badge is kept
-// but unlinked (ON DELETE SET NULL), so members keep what they earned.
+// DELETE - delete event by id, along with its badge (ON DELETE CASCADE), every
+// member's award of that badge, and both image files.
 export async function DELETE(req: NextRequest) {
   const isAuth = await verifyAdminAuth(req);
   if (!isAuth)

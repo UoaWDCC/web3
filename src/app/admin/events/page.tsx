@@ -68,9 +68,9 @@ export default function AdminEventsPage() {
   const [badgesError, setBadgesError] = useState<string | null>(null);
   // The badge the event being edited already has, as saved.
   const [existingBadge, setExistingBadge] = useState<Badge | null>(null);
-  // Set when the admin removes the existing badge: on save it is unlinked
-  // from the event (not deleted), so members keep what they earned.
-  const [unlinkBadge, setUnlinkBadge] = useState(false);
+  // Set when the admin removes the existing badge: on save it is deleted,
+  // along with every member's award of it.
+  const [removeBadge, setRemoveBadge] = useState(false);
 
   // Badges are public, so they are read directly rather than through an
   // admin route. Reloaded whenever the event list is, i.e. after every save.
@@ -118,7 +118,7 @@ export default function AdminEventsPage() {
     setImageUrl(null);
     setBadgeDraft(null);
     setExistingBadge(null);
-    setUnlinkBadge(false);
+    setRemoveBadge(false);
   };
 
   const createEvent = async () => {
@@ -145,8 +145,8 @@ export default function AdminEventsPage() {
 
       const payload: Record<string, unknown> = { event };
 
-      if (unlinkBadge) {
-        payload.unlink_badge = true;
+      if (removeBadge) {
+        payload.remove_badge = true;
       } else if (badgeDraft) {
         // Creates the event's badge, or updates the one it already has.
         payload.badge = {
@@ -196,7 +196,12 @@ export default function AdminEventsPage() {
   };
 
   const handleDeleteEvent = async (eventId: string) => {
-    if (!confirm("Are you sure you want to delete this event?")) return;
+    const badge = eventBadges[eventId];
+    const message = badge
+      ? `Are you sure you want to delete this event? Its badge "${badge.name}" will also be deleted, and every member who earned it will lose it.`
+      : "Are you sure you want to delete this event?";
+
+    if (!confirm(message)) return;
 
     try {
       const res = await adminFetch("/api/admin/events", {
@@ -381,9 +386,9 @@ export default function AdminEventsPage() {
                       className={`${adminButtonClass} h-9 gap-1.5 px-3 text-sm !bg-[#DAF2FB]/60 dark:!bg-[#405084]/60`}
                       onClick={() => {
                         setBadgeDraft(null);
-                        // A saved badge is unlinked on save; an unsaved one
+                        // A saved badge is deleted on save; an unsaved one
                         // simply goes away.
-                        if (existingBadge) setUnlinkBadge(true);
+                        if (existingBadge) setRemoveBadge(true);
                       }}
                     >
                       <Trash2 className="size-3.5" />
@@ -391,19 +396,19 @@ export default function AdminEventsPage() {
                     </Button>
                   </div>
                 </div>
-              ) : unlinkBadge && existingBadge ? (
-                // Unlinking and adding a new badge can't happen in one save, so
+              ) : removeBadge && existingBadge ? (
+                // Removing and adding a new badge can't happen in one save, so
                 // Add Badge waits until this one has been saved.
                 <div className="mt-2 flex flex-col items-start gap-3">
-                  <p className="text-sm text-black/70 dark:text-white/80">
-                    &ldquo;{existingBadge.name}&rdquo; will be removed from this
-                    event when you save. Members who earned it keep it.
+                  <p className="text-sm font-medium text-red-700 dark:text-red-200">
+                    &ldquo;{existingBadge.name}&rdquo; will be deleted when you
+                    save, and every member who earned it will lose it.
                   </p>
                   <Button
                     size="sm"
                     className={`${adminButtonClass} h-9 gap-1.5 px-3 text-sm`}
                     onClick={() => {
-                      setUnlinkBadge(false);
+                      setRemoveBadge(false);
                       setBadgeDraft(draftFromBadge(existingBadge));
                     }}
                   >
@@ -525,7 +530,7 @@ export default function AdminEventsPage() {
                     setBadgeDraft(
                       savedBadge ? draftFromBadge(savedBadge) : null,
                     );
-                    setUnlinkBadge(false);
+                    setRemoveBadge(false);
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
                 >
