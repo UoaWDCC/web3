@@ -4,6 +4,7 @@ import {
   MemberBadge,
   MemberBadgeInsert,
   MemberBadgeWithBadge,
+  PublicMemberBadge,
   memberBadgeInsertSchema,
 } from "../../lib/schemas/member-badge";
 import { getSupabase } from "../supabase";
@@ -94,6 +95,24 @@ export default class MemberBadgesService {
 
     if (error) throw error;
     return (data ?? []) as unknown as MemberBadgeWithBadge[];
+  }
+
+  /**
+   * Retrieves every badge a visible public profile holds, with the badge
+   * details embedded. Goes through the get_public_profile_badges database
+   * function, because anon can't read the registration id the awards are
+   * keyed on.
+   * @param profileId The public_profiles.id of the member.
+   */
+  public async getBadgesForPublicProfile(
+    profileId: string,
+  ): Promise<PublicMemberBadge[]> {
+    const { data, error } = await this.db.rpc("get_public_profile_badges", {
+      p_profile_id: profileId,
+    });
+
+    if (error) throw error;
+    return (data ?? []) as PublicMemberBadge[];
   }
 
   /**

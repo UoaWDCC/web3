@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import type { MemberBadgeWithBadge } from "@/lib/schemas/member-badge";
+import type { PublicMemberBadge } from "@/lib/schemas/member-badge";
 
 // Badge images are arbitrary Supabase/storage URLs and next.config.ts declares
 // no remotePatterns, so next/image would throw on them. Plain <img> is what the
@@ -25,7 +25,7 @@ const formatAwardedAt = (awardedAt: string) => {
   });
 };
 
-export function BadgeCard({ award }: { award: MemberBadgeWithBadge }) {
+export function BadgeCard({ award }: { award: PublicMemberBadge }) {
   const { badge } = award;
   const awardedOn = formatAwardedAt(award.awardedat);
   const category = CATEGORY_LABELS[badge.category] ?? badge.category;

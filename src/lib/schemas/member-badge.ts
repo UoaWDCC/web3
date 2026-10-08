@@ -29,6 +29,11 @@ const memberBadgeWithBadgeSchema = memberBadgeSchema.extend({
 export type MemberBadge = z.infer<typeof memberBadgeSchema>;
 /** A member_badges row with its parent badge embedded. */
 export type MemberBadgeWithBadge = z.infer<typeof memberBadgeWithBadgeSchema>;
+/**
+ * An award as shown on a public profile: memberid is left out, since it is the
+ * member's registrations.id, which anon isn't allowed to read.
+ */
+export type PublicMemberBadge = Omit<MemberBadgeWithBadge, "memberid">;
 /** The payload accepted by `awardBadge`. */
 export type MemberBadgeInsert = z.input<typeof memberBadgeInsertSchema>;
 

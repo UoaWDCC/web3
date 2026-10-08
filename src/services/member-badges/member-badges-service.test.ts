@@ -8,6 +8,7 @@ import MemberBadgesService from "./member-badges-service";
 const AWARD_ID = "9c1d7b3e-5a2f-4e18-b7d0-2c6a4f9e8b11";
 const BADGE_ID = "3f7c1e2a-1b4d-4c6f-9a2e-8d5b0c7f1a33";
 const MEMBER_ID = 42;
+const PROFILE_ID = "5e8a2c4b-6d31-4f97-a02e-1b7c9d4e6f85";
 
 type MockFn = ReturnType<typeof vi.fn>;
 
@@ -57,8 +58,14 @@ function fakeSupabase(results: QueryResult | QueryResult[]) {
   };
 
   const from = vi.fn(() => builder);
+  const rpc = vi.fn(() => Promise.resolve(next()));
 
-  return { client: { from } as unknown as SupabaseClient, from, builder };
+  return {
+    client: { from, rpc } as unknown as SupabaseClient,
+    from,
+    rpc,
+    builder,
+  };
 }
 
 /** A Postgres error shaped the way supabase-js surfaces it. */
@@ -300,6 +307,56 @@ describe("MemberBadgesService", () => {
       await expect(
         new MemberBadgesService(fake.client).getBadgesForMember(MEMBER_ID),
       ).resolves.toEqual([]);
+    });
+  });
+
+  describe("getBadgesForPublicProfile", () => {
+    it("calls get_public_profile_badges with the public profile's id", async () => {
+      const fake = fakeSupabase({ data: [], error: null });
+
+      await new MemberBadgesService(fake.client).getBadgesForPublicProfile(
+        PROFILE_ID,
+      );
+
+      expect(fake.rpc).toHaveBeenCalledWith("get_public_profile_badges", {
+        p_profile_id: PROFILE_ID,
+      });
+      expect(fake.from).not.toHaveBeenCalled();
+    });
+
+    it("returns the awards with their badge attached", async () => {
+      const { id, badgeid, awardedat } = awardRow();
+      const fake = fakeSupabase({
+        data: [{ id, badgeid, awardedat, badge: badgeRow() }],
+        error: null,
+      });
+
+      const held = await new MemberBadgesService(
+        fake.client,
+      ).getBadgesForPublicProfile(PROFILE_ID);
+
+      expect(held).toHaveLength(1);
+      expect(held[0].badge.name).toBe("Testing Badge");
+    });
+
+    it("returns an empty array rather than null when the profile holds none", async () => {
+      const fake = fakeSupabase({ data: null, error: null });
+
+      await expect(
+        new MemberBadgesService(fake.client).getBadgesForPublicProfile(
+          PROFILE_ID,
+        ),
+      ).resolves.toEqual([]);
+    });
+
+    it("throws the database error when the call fails", async () => {
+      const fake = fakeSupabase({ data: null, error: dbError("42501") });
+
+      await expect(
+        new MemberBadgesService(fake.client).getBadgesForPublicProfile(
+          PROFILE_ID,
+        ),
+      ).rejects.toMatchObject({ code: "42501" });
     });
   });
 

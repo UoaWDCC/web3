@@ -7,14 +7,14 @@ import {
   type PublicProfile,
 } from "@/services/public-profiles-service";
 import MemberBadgesService from "@/services/member-badges/member-badges-service";
-import type { MemberBadgeWithBadge } from "@/lib/schemas/member-badge";
+import type { PublicMemberBadge } from "@/lib/schemas/member-badge";
 import { BadgeCard } from "@/components/badge-card";
 import { AttendedEvents } from "@/components/attended-events";
 
 export default function PublicProfilePage() {
   const { id } = useParams<{ id: string }>();
   const [profile, setProfile] = useState<PublicProfile | null>(null);
-  const [badges, setBadges] = useState<MemberBadgeWithBadge[]>([]);
+  const [badges, setBadges] = useState<PublicMemberBadge[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,14 +36,16 @@ export default function PublicProfilePage() {
           }
         }
 
-        // The route param is a public_profiles uuid, but member_badges is keyed
-        // on registrations.id, so the badges hang off registration_id. Fetched
-        // separately so a badge failure still leaves the profile readable.
+        // member_badges is keyed on registrations.id, which anon can't read,
+        // so the badges are looked up by the public profile's id instead.
+        // Fetched separately so a badge failure still leaves the profile
+        // readable.
         if (publicProfile) {
           try {
-            const awards = await new MemberBadgesService().getBadgesForMember(
-              publicProfile.registration_id,
-            );
+            const awards =
+              await new MemberBadgesService().getBadgesForPublicProfile(
+                publicProfile.id,
+              );
             if (!cancelled) setBadges(awards);
           } catch (badgeError) {
             console.error("Unable to load badges", badgeError);
