@@ -1,13 +1,21 @@
 import { createOffchainClient, ChainName } from "@thenamespace/offchain-manager";
 
-const apiKey = process.env.NAMESPACE_API_KEY;
-if (!apiKey) throw new Error("NAMESPACE_API_KEY not configured");
+let client: ReturnType<typeof createOffchainClient> | null = null;
 
-const client = createOffchainClient({
-  mode: "mainnet",
-  timeout: 10_000,
-  defaultApiKey: apiKey,
-});
+function getClient() {
+  if (client) return client;
+
+  const apiKey = process.env.NAMESPACE_API_KEY;
+  if (!apiKey) throw new Error("NAMESPACE_API_KEY not configured");
+
+  client = createOffchainClient({
+    mode: "mainnet",
+    timeout: 10_000,
+    defaultApiKey: apiKey,
+  });
+
+  return client;
+}
 
 interface SetNameParams {
   domain: string;
@@ -16,6 +24,7 @@ interface SetNameParams {
 }
 
 export async function setName({ domain, name, address }: SetNameParams) {
+  const client = getClient();
   const fullName = `${name}.${domain}`;
 
   const { isAvailable } = await client.isSubnameAvailable(fullName);
@@ -38,10 +47,12 @@ export async function deleteName({
   domain: string;
   name: string;
 }) {
+  const client = getClient();
   return client.deleteSubname(`${name}.${domain}`);
 }
 
 export async function getNames(domain: string, limit = 50) {
+  const client = getClient();
   const page = await client.getFilteredSubnames({
     parentName: domain,
     page: 1,
