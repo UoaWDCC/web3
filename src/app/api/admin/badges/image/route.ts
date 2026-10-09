@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { EventService } from "@/services/event-service";
-import { isAllowedAdminAddress } from "@/lib/admin-auth";
 import { verifyMessage } from "viem";
+import { isAllowedAdminAddress } from "@/lib/admin-auth";
+import BadgesService from "@/services/badges/badges-service";
+import { getSupabaseAdmin } from "@/services/supabase-admin";
 
 async function verifyAdminAuth(req: NextRequest) {
   const address = req.headers.get("x-admin-address")?.toLowerCase();
@@ -26,6 +27,7 @@ async function verifyAdminAuth(req: NextRequest) {
   }
 }
 
+// POST - upload a badge image, returning the public URL to save as imageurl
 export async function POST(req: NextRequest) {
   const isAuth = await verifyAdminAuth(req);
   if (!isAuth)
@@ -33,23 +35,36 @@ export async function POST(req: NextRequest) {
 
   try {
     const formData = await req.formData();
-    const file = formData.get("image") as File | null;
+    const file = formData.get("image");
 
-    if (!file) {
+    if (!(file instanceof File)) {
       return NextResponse.json(
         { error: "Missing image file" },
         { status: 400 },
       );
     }
 
-    const uploaded = await EventService.uploadEventImage(file);
+    // Unlike the events bucket, the badges bucket has no MIME restriction of
+    // its own, so this is the only thing keeping non-images out of it.
+    if (!file.type.startsWith("image/")) {
+      return NextResponse.json(
+        { error: "Badge image must be an image file" },
+        { status: 400 },
+      );
+    }
+
+    const uploaded = await new BadgesService(
+      getSupabaseAdmin(),
+    ).uploadBadgeImage(file);
+
     return NextResponse.json({
-      event_path: uploaded.imagePath,
-      event_url: uploaded.imageUrl,
+      image_path: uploaded.imagePath,
+      imageurl: uploaded.imageUrl,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json(
-      { error: err.message || "Image upload failed" },
+      { error: message || "Image upload failed" },
       { status: 500 },
     );
   }
