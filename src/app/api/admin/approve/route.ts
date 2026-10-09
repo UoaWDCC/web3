@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPrisma } from "@/lib/prisma";
-import { setName } from "@/lib/namestone";
+import { setName } from "@/lib/namespace";
 import { verifyMessage } from "viem";
 import { isAllowedAdminAddress } from "@/lib/admin-auth";
 
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid claim" }, { status: 400 });
     }
 
-    // Call NameStone
+    // Call NameSpace
     await setName({
       domain: "web3uoa.eth",
       name: claim.requestedName,

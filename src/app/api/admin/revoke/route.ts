@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPrisma } from "@/lib/prisma";
-import { deleteName } from "@/lib/namestone";
+import { deleteName } from "@/lib/namespace";
 import { verifyMessage } from "viem";
 import { isAllowedAdminAddress } from "@/lib/admin-auth";
 
@@ -31,20 +31,22 @@ export async function POST(req: NextRequest) {
 
   try {
     const prisma = getPrisma();
-    const { name, claimId } = await req.json();
+    const { name } = await req.json();
 
-    // Delete from NameStone
     await deleteName({
       domain: "web3uoa.eth",
       name,
     });
 
-    if (claimId) {
-      await prisma.claimRequest.update({
-        where: { id: claimId },
-        data: { status: "REJECTED" }, // or we could delete the record
-      });
-    }
+    // Find and reject the matching approved claim, since the frontend
+    // only sends the name, not the ClaimRequest id.
+    await prisma.claimRequest.updateMany({
+      where: {
+        requestedName: name.toLowerCase(),
+        status: "APPROVED",
+      },
+      data: { status: "REJECTED" },
+    });
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
