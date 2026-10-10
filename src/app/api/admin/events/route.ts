@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabase } from "@/services/supabase";
 import { RegistrationService } from "@/services/registrations/registrations-service";
 import { verifyMessage } from "viem";
-import { isAllowedAdminAddress } from "@/lib/admin-auth";
+import { isAdminAddress } from "@/lib/admin-auth-server";
 import { getSupabaseAdmin } from "@/services/supabase-admin";
 
 async function verifyAdminAuth(req: NextRequest) {
@@ -11,7 +11,7 @@ async function verifyAdminAuth(req: NextRequest) {
   const timestamp = req.headers.get("x-admin-timestamp");
 
   if (!address || !signature || !timestamp) return false;
-  if (!isAllowedAdminAddress(address)) return false;
+  if (!(await isAdminAddress(address))) return false;
   if (Date.now() - parseInt(timestamp) > 5 * 60 * 1000) return false;
 
   // Prevent replay attacks (valid for 5 mins)

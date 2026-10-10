@@ -32,12 +32,32 @@ export function Navbar() {
   const [mounted, setMounted] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const { address } = useAccount();
+  const [isDbAdmin, setIsDbAdmin] = useState(false);
 
   const pathname = usePathname();
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!address) {
+      setIsDbAdmin(false);
+      return;
+    }
+
+    let cancelled = false;
+    fetch(`/api/admin/is-admin?address=${encodeURIComponent(address)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled) setIsDbAdmin(!!data.isAdmin);
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [address]);
 
   useEffect(() => {
     const saved = localStorage.getItem("theme") as "light" | "dark" | null;
@@ -69,7 +89,7 @@ export function Navbar() {
     return () => clearTimeout(timeout);
   }, [theme, themeReady]);
 
-  const isAdmin = mounted && isAllowedAdminAddress(address);
+  const isAdmin = mounted && (isAllowedAdminAddress(address) || isDbAdmin);
 
   const isActive = (href: string) => {
     if (href.startsWith("#")) return false;
