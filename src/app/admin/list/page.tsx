@@ -267,7 +267,7 @@ export default function AdminListing() {
               className="flex flex-col gap-3 rounded-xl bg-white/40 p-4 sm:flex-row sm:items-center sm:justify-between dark:bg-white/10"
             >
               <div className="min-w-0">
-                <p className="font-bold text-black dark:text-white">
+                <p className="break-all font-bold text-black dark:text-white">
                   {admin.member_name ?? admin.wallet_address}
                 </p>
                 <p className="break-all text-xs text-black/60 dark:text-white/70">
@@ -305,8 +305,8 @@ export default function AdminListing() {
       </SectionCard>
 
       <SectionCard title="History">
-        <div className="grid gap-8 md:grid-cols-2">
-          <div>
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+          <div className="min-w-0">
             <h3 className="mb-4 border-b border-black/20 pb-3 text-lg font-bold text-black dark:border-white/30 dark:text-white">
               Added
             </h3>
@@ -316,7 +316,7 @@ export default function AdminListing() {
                   key={`added-${admin.wallet_address}-${admin.added_at}`}
                   className="rounded-xl bg-white/40 p-4 dark:bg-white/10"
                 >
-                  <p className="font-bold text-black dark:text-white">
+                  <p className="break-all font-bold text-black dark:text-white">
                     {admin.member_name ?? admin.wallet_address}
                   </p>
                   <p className="text-xs text-black/60 dark:text-white/70">
@@ -336,7 +336,7 @@ export default function AdminListing() {
             </div>
           </div>
 
-          <div>
+          <div className="min-w-0">
             <h3 className="mb-4 border-b border-black/20 pb-3 text-lg font-bold text-black dark:border-white/30 dark:text-white">
               Revoked
             </h3>
@@ -346,7 +346,7 @@ export default function AdminListing() {
                   key={`revoked-${admin.wallet_address}-${admin.revoked_at}`}
                   className="rounded-xl bg-white/40 p-4 dark:bg-white/10"
                 >
-                  <p className="font-bold text-black dark:text-white">
+                  <p className="break-all font-bold text-black dark:text-white">
                     {admin.member_name ?? admin.wallet_address}
                   </p>
                   <p className="text-xs text-black/60 dark:text-white/70">
