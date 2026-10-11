@@ -23,13 +23,16 @@ export function AdminNav() {
     href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
 
   return (
-    <nav className="flex gap-2 overflow-x-auto rounded-full bg-white/40 p-1.5 dark:bg-white/10">
+    <nav
+      aria-label="Admin sections"
+      className="flex min-w-0 gap-2 overflow-x-auto rounded-2xl bg-white/40 p-1.5 sm:w-fit sm:rounded-full dark:bg-white/10"
+    >
       {tabs.map((tab) => (
         <Link
           key={tab.href}
           href={tab.href}
           aria-current={isActive(tab.href) ? "page" : undefined}
-          className={`whitespace-nowrap rounded-full px-5 py-2 font-semibold transition-colors ${
+          className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-semibold transition-colors sm:px-5 sm:text-base ${
             isActive(tab.href)
               ? "bg-[#3F65E2] text-white dark:bg-[#A3DEF4] dark:text-black"
               : "text-hero-text hover:bg-white/50 dark:hover:bg-white/10"

@@ -22,7 +22,7 @@ function StatTile({
     return (
     <Link
       href={href}
-      className="flex flex-col gap-1 rounded-xl bg-white/40 p-6 transition-all hover:-translate-y-0.5 hover:bg-white/60 dark:bg-white/10 dark:hover:bg-white/20"
+      className="flex flex-col gap-2 rounded-xl bg-white/40 p-6 transition-all hover:-translate-y-0.5 hover:bg-white/60 sm:p-8 dark:bg-white/10 dark:hover:bg-white/20"
     >
       <span className="text-4xl font-black text-black dark:text-white">
         {value}
@@ -94,7 +94,7 @@ export default function AdminPage() {
 
   return (
     <SectionCard title="Overview">
-      <div className="grid gap-6 sm:grid-cols-3">
+      <div className="grid gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-8">
         <StatTile
           label="Pending requests"
           value={pendingCount}

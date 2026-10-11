@@ -87,15 +87,15 @@ function AdminGate({ children }: { children: ReactNode }) {
   return (
     <main className={pageShell}>
       <div className={panelShell}>
-        <h1 className="mb-8 text-center text-5xl font-black tracking-tight text-hero-text md:text-6xl">
+        <h1 className="mb-6 text-center text-3xl font-black tracking-tight text-hero-text sm:mb-8 sm:text-5xl md:text-6xl">
           Admin Dashboard
         </h1>
 
-        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-8 flex flex-col gap-4 sm:mb-10 sm:flex-row sm:items-center sm:justify-between">
           <AdminNav />
           <Button
             onClick={() => fetchData()}
-            className={`${siteButtonClass} shrink-0`}
+            className={`${siteButtonClass} w-full shrink-0 sm:w-auto`}
           >
             {loading ? "Refreshing..." : "Refresh"}
           </Button>
