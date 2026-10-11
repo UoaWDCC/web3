@@ -91,7 +91,7 @@
 
 /* dark theme*/
 .dark {
-  --background-theme: linear-gradient(90deg,#CAC1F7 0%,#A8A1CA 21%,#7B7890 59%,#5C5A66 86%,#6B6A7A 100%);
+  --background-theme: linear-gradient(90deg, #BDB5D1 0%, #ABA2C2 21%, #9287AF 59%, #7F759C 86%, #8E84AA 100%);
   --color-nav-bar-bg: rgba(64, 66, 70, 0.6);
   --color-nav-text: rgba(255,255,255);
   --color-nav-bar-text: rgba(255, 255, 255);
