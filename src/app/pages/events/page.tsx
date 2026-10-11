@@ -11,8 +11,7 @@ export default async function EventsPage() {
 
   return (
     <main className="min-h-screen pt-28">
-      {/* Width tracks the navbar (see navbar.tsx) so the two line up. */}
-      <div className="mx-auto mb-20 mt-20 w-[95%] rounded-[48px] bg-nav-bg p-8 shadow-xl sm:w-[90%] md:p-16 lg:w-[85%] xl:w-[80%]">
+      <div className="mx-auto mb-20 mt-20 w-[calc(100%-2rem)] max-w-6xl rounded-[48px] bg-nav-bg p-8 shadow-xl md:p-16">
         <header className="mb-14 text-center">
           <h1 className="mb-4 text-5xl font-black leading-tight tracking-tight text-hero-text md:text-6xl">
             Upcoming events
