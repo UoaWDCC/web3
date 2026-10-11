@@ -4,7 +4,7 @@ import { Instagram, Linkedin, ArrowRight } from "lucide-react";
 export function Hero() {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden border-b border-border/50">
-      <div className="container relative z-12 px-6 sm:px-12 lg:px-25 pt-65 pb-10">
+      <div className="container relative z-12 px-6 pt-65 pb-10 sm:px-12 lg:w-[85%] lg:max-w-none lg:px-8">
         <div className="flex flex-col lg:flex-row items-center justify-between gap-16">
           {/* Hero text (left side) */}
           <div className="flex-1 space-y-8 text-center lg:text-left">
@@ -23,10 +23,7 @@ export function Hero() {
                 className="text-base px-6 h-12 rounded-2xl" // rounded-2xl is needed for the pill style to work properly
                 asChild
               >
-                <a
-                  href="/pages/join-us"
-                  rel="noopener noreferrer"
-                >
+                <a href="/pages/join-us" rel="noopener noreferrer">
                   Join the Club
                 </a>
               </Button>
@@ -79,7 +76,7 @@ export function Hero() {
           </div>
 
           {/* Logo element (right side) */}
-          <div className="flex-1 flex justify-center items-center relative">
+          <div className="relative flex flex-1 items-center justify-center lg:justify-end">
             {/* The cube effect */}
             <a
               href="#identity"
