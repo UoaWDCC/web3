@@ -174,9 +174,9 @@ export default function AdminEventsPage() {
 
   return (
     <SectionCard title={editingId ? "Edit Event" : "Create Event"}>
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-8 lg:grid-cols-2">
         {/* Left column: text and meta */}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-6">
           <AdminField label="Title">
             <input
               className={adminInputClass}
@@ -225,7 +225,7 @@ export default function AdminEventsPage() {
         </div>
 
         {/* Right column: times and media */}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-6">
           <AdminField label="Start Time">
             <input
               type="datetime-local"
@@ -306,11 +306,11 @@ export default function AdminEventsPage() {
         </div>
       </div>
 
-      <div className="mt-6 flex flex-wrap items-center gap-3">
+      <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <Button
           onClick={createEvent}
           disabled={imageUploading}
-          className={adminButtonClass}
+          className={`${adminButtonClass} w-full sm:w-auto`}
         >
           {imageUploading
             ? "Uploading..."
@@ -320,15 +320,15 @@ export default function AdminEventsPage() {
         </Button>
         <Button
           onClick={resetForm}
-          className={`${adminButtonClass} !bg-[#DAF2FB]/60 dark:!bg-[#405084]/60`}
+          className={`${adminButtonClass} w-full !bg-[#DAF2FB]/60 dark:!bg-[#405084]/60 sm:w-auto`}
         >
           Reset
         </Button>
       </div>
 
       {/* ------------------------------------------------- Existing events */}
-      <div className="mt-8 border-t border-black/10 pt-6 dark:border-white/20">
-        <h3 className="mb-4 text-lg font-bold text-black dark:text-white">
+      <div className="mt-10 border-t border-black/10 pt-8 dark:border-white/20">
+        <h3 className="mb-6 text-lg font-bold text-black dark:text-white">
           Existing Events
         </h3>
 
@@ -338,11 +338,11 @@ export default function AdminEventsPage() {
           </p>
         )}
 
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4">
           {events.map((ev) => (
             <div
               key={ev.id}
-              className="flex flex-col gap-3 rounded-xl bg-white/40 p-4 md:flex-row md:items-center md:justify-between dark:bg-white/10"
+              className="flex flex-col gap-4 rounded-xl bg-white/40 p-5 sm:flex-row sm:items-center sm:justify-between dark:bg-white/10"
             >
               <div className="flex items-center gap-4">
                 {ev.event_url && (
@@ -352,23 +352,23 @@ export default function AdminEventsPage() {
                     className="size-16 shrink-0 rounded-lg object-cover"
                   />
                 )}
-                <div>
+                <div className="min-w-0">
                   <p className="font-bold text-black dark:text-white">
                     {ev.title}
                   </p>
-                  <p className="text-xs text-black/60 dark:text-white/70">
+                  <p className="break-words text-xs text-black/60 dark:text-white/70">
                     {formatDateString(ev.start_time)} —{" "}
                     {formatDateString(ev.end_time)}
                   </p>
                   {ev.location && (
-                    <p className="text-xs text-black/60 dark:text-white/70">
+                    <p className="break-words text-xs text-black/60 dark:text-white/70">
                       {ev.location}
                     </p>
                   )}
                 </div>
               </div>
 
-              <div className="flex shrink-0 gap-2">
+              <div className="flex shrink-0 gap-2 self-start sm:self-auto">
                 <Button
                   size="sm"
                   className={`${adminButtonClass} h-9 px-4 text-sm`}

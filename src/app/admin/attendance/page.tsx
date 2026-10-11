@@ -315,12 +315,12 @@ export default function AdminAttendancePage() {
           Select an event, then scan member QR codes.
         </p>
 
-        <div className="mt-6 max-w-md">
+        <div className="mt-8 max-w-xl">
           <select
             value={checkinEventId}
             onChange={(e) => setCheckinEventId(e.target.value)}
             disabled={eventsLoading}
-            className="border border-border rounded px-3 py-2 mb-3 text-sm w-full bg-white/70 dark:bg-black/20"
+            className="mb-4 w-full rounded-lg border border-border bg-white/70 px-4 py-3 text-sm dark:bg-black/20"
           >
             <option value="">
               {eventsLoading ? "Loading events..." : "Select an event…"}
@@ -333,15 +333,16 @@ export default function AdminAttendancePage() {
             ))}
           </select>
 
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <Button
               onClick={openScanner}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="w-full bg-blue-600 hover:bg-blue-700 sm:w-auto"
             >
               Scan Code
             </Button>
             <Button
               variant="outline"
+              className="w-full sm:w-auto"
               onClick={() => {
                 if (authHeader) void fetchEvents(authHeader);
               }}
@@ -365,13 +366,14 @@ export default function AdminAttendancePage() {
         </div>
 
         {checkinEventId && (
-          <div className="mt-8 border-t border-border pt-5">
+          <div className="mt-10 border-t border-border pt-7">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-lg font-semibold text-black dark:text-white">
                 Attending ({attendees.length})
               </h2>
               <Button
                 variant="outline"
+                className="w-full sm:w-auto"
                 onClick={() =>
                   setAttendeesRefreshVersion((version) => version + 1)
                 }
@@ -404,8 +406,8 @@ export default function AdminAttendancePage() {
       </SectionCard>
 
       {scannerOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex flex-col items-center justify-center p-4">
-          <div className="bg-background rounded-2xl p-4 w-full max-w-sm flex flex-col items-center gap-4">
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 p-4">
+          <div className="flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col items-center gap-5 overflow-y-auto rounded-2xl bg-background p-4 sm:p-6">
             {scanStatus === "scanning" && (
               <>
                 <p className="font-semibold text-center">
@@ -415,7 +417,7 @@ export default function AdminAttendancePage() {
                 </p>
                 <video
                   ref={videoRef}
-                  className="w-full aspect-square rounded-xl object-cover bg-black"
+                  className="aspect-square max-h-[60dvh] w-full rounded-xl bg-black object-cover"
                   muted
                   playsInline
                   autoPlay
