@@ -36,10 +36,11 @@ export function BadgeCard({ award }: { award: PublicMemberBadge }) {
   const showImage = Boolean(badge.imageurl) && !imageBroken;
 
   return (
-    <div className="group relative w-full flex justify-center">
+    <div className="group relative w-full flex flex-col items-center gap-3">
       {/* A button rather than a div so the detail panel is reachable by keyboard
           and by tap, not just by mouse hover. The badge is shown as the image
-          alone; its name and details live in the hover panel below. */}
+          with its name underneath; the rest of its details live in the hover
+          panel below. */}
       <button
         type="button"
         className="w-4/5 max-w-[10rem] aspect-square rounded-full overflow-hidden flex items-center justify-center transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
@@ -62,6 +63,16 @@ export function BadgeCard({ award }: { award: PublicMemberBadge }) {
           </span>
         )}
       </button>
+
+      {/* aria-hidden because the button's aria-label already announces the
+          name. Long names wrap to two lines and are cut off after that, so
+          badges in the same row stay aligned. */}
+      <p
+        aria-hidden="true"
+        className="w-4/5 max-w-[10rem] text-center text-base font-bold leading-tight line-clamp-2 break-words"
+      >
+        {badge.name}
+      </p>
 
       <div
         role="tooltip"
