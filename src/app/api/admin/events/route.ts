@@ -3,7 +3,7 @@ import { getSupabase } from "@/services/supabase";
 import { RegistrationService } from "@/services/registrations/registrations-service";
 import { verifyMessage } from "viem";
 import { isAllowedAdminAddress } from "@/lib/admin-auth";
-import { getSupabaseAdmin } from "@/services/supabase-admin";
+import { normalizeRegistrationUrl } from "@/lib/events";
 
 async function verifyAdminAuth(req: NextRequest) {
   const address = req.headers.get("x-admin-address")?.toLowerCase();
@@ -12,11 +12,9 @@ async function verifyAdminAuth(req: NextRequest) {
 
   if (!address || !signature || !timestamp) return false;
   if (!isAllowedAdminAddress(address)) return false;
-  if (Date.now() - parseInt(timestamp) > 5 * 60 * 1000) return false;
 
   // Prevent replay attacks (valid for 5 mins)
-  const now = Date.now();
-  if (now - parseInt(timestamp) > 5 * 60 * 1000) return false;
+  if (Date.now() - parseInt(timestamp) > 5 * 60 * 1000) return false;
 
   try {
     const valid = await verifyMessage({
@@ -70,12 +68,10 @@ export async function PUT(req: NextRequest) {
       description,
       start_time,
       end_time,
-      check_in_open_time,
-      check_in_close_time,
       event_path,
       event_url,
       location,
-      capacity,
+      registration_url,
     } = body || {};
 
     if (!title || !start_time || !end_time) {
@@ -93,12 +89,14 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    if (check_in_open_time && check_in_close_time) {
-      if (new Date(check_in_close_time) <= new Date(check_in_open_time)) {
-        return NextResponse.json(
-          { error: "check_in_close_time must be after check_in_open_time" },
-          { status: 400 },
-        );
+    let registrationUrl: string | null | undefined;
+    if (registration_url !== undefined) {
+      try {
+        registrationUrl = normalizeRegistrationUrl(registration_url);
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : "Invalid registration link";
+        return NextResponse.json({ error: message }, { status: 400 });
       }
     }
 
@@ -110,13 +108,12 @@ export async function PUT(req: NextRequest) {
         description,
         start_time,
         end_time,
-        check_in_open_time,
-        check_in_close_time,
       };
       if (event_path !== undefined) updatePayload.event_path = event_path;
       if (event_url !== undefined) updatePayload.event_url = event_url;
       if (location !== undefined) updatePayload.location = location;
-      if (capacity !== undefined) updatePayload.capacity = capacity;
+      if (registrationUrl !== undefined)
+        updatePayload.registration_url = registrationUrl;
 
       const { data, error } = await supabase
         .from("events")
@@ -137,13 +134,12 @@ export async function PUT(req: NextRequest) {
       description,
       start_time,
       end_time,
-      check_in_open_time,
-      check_in_close_time,
     };
     if (event_path !== undefined) insertPayload.event_path = event_path;
     if (event_url !== undefined) insertPayload.event_url = event_url;
     if (location !== undefined) insertPayload.location = location;
-    if (capacity !== undefined) insertPayload.capacity = capacity;
+    if (registrationUrl !== undefined)
+      insertPayload.registration_url = registrationUrl;
 
     const { data, error } = await supabase
       .from("events")

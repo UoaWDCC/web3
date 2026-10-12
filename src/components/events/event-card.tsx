@@ -10,10 +10,9 @@ import {
 
 // Dot colours come from the site's existing accent palette (see about.tsx).
 // `Open` needs explicit dark variants because --color-web3 flips to light blue
-// in dark mode, which would make it indistinguishable from `Full`.
+// in dark mode, which would make it blend into the card.
 const STATUS_STYLES: Record<EventStatus, { label: string; dot: string }> = {
   open: { label: "Open", dot: "bg-[#3F65E2] dark:bg-[#D8B6F7]" },
-  full: { label: "Full", dot: "bg-[#A3DEF4]" },
   closed: { label: "Closed", dot: "bg-neutral-400 dark:bg-neutral-500" },
 };
 
