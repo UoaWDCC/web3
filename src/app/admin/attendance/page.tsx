@@ -40,6 +40,7 @@ export default function AdminAttendancePage() {
   const [scanResult, setScanResult] = useState<{
     name: string;
     alreadyCheckedIn: boolean;
+    badgeName: string | null;
   } | null>(null);
   const [scanError, setScanError] = useState("");
   const [attendees, setAttendees] = useState<Attendee[]>([]);
@@ -187,6 +188,7 @@ export default function AdminAttendancePage() {
       setScanResult({
         name: data.member.name,
         alreadyCheckedIn: data.alreadyCheckedIn,
+        badgeName: data.badge?.name ?? null,
       });
 
       try {
@@ -450,6 +452,11 @@ export default function AdminAttendancePage() {
                         ? "Already checked in"
                         : "Checked in successfully"}
                     </p>
+                    {scanResult.badgeName && (
+                      <p className="text-sm text-foreground/70 text-center">
+                        Badge: {scanResult.badgeName}
+                      </p>
+                    )}
                   </>
                 ) : (
                   <p className="text-red-500 text-center">{scanError}</p>

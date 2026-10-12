@@ -240,6 +240,39 @@ describe("BadgesService", () => {
     });
   });
 
+  describe("getBadgeByEventId", () => {
+    it("filters on the event and returns its badge", async () => {
+      const fake = fakeSupabase({
+        data: badgeRow({ category: BadgeType.Event, eventid: EVENT_ID }),
+        error: null,
+      });
+
+      const badge = await new BadgesService(fake.client).getBadgeByEventId(
+        EVENT_ID,
+      );
+
+      expect(fake.from).toHaveBeenCalledWith("badges");
+      expect(fake.builder.eq).toHaveBeenCalledWith("eventid", EVENT_ID);
+      expect(badge?.eventid).toBe(EVENT_ID);
+    });
+
+    it("returns null when the event has no badge", async () => {
+      const fake = fakeSupabase({ data: null, error: null });
+
+      await expect(
+        new BadgesService(fake.client).getBadgeByEventId(EVENT_ID),
+      ).resolves.toBeNull();
+    });
+
+    it("throws the database error when the lookup fails", async () => {
+      const fake = fakeSupabase({ data: null, error: dbError("42501") });
+
+      await expect(
+        new BadgesService(fake.client).getBadgeByEventId(EVENT_ID),
+      ).rejects.toMatchObject({ code: "42501" });
+    });
+  });
+
   describe("getAllBadges", () => {
     it("returns every row", async () => {
       const fake = fakeSupabase({

@@ -70,6 +70,23 @@ export default class BadgesService {
   }
 
   /**
+   * Retrieves the {@link Badge} of an event. badges.eventid is unique, so an
+   * event has at most one.
+   * @param eventId The ID of the event.
+   * @returns The event's badge, or `null` if it has none.
+   */
+  public async getBadgeByEventId(eventId: string): Promise<Badge | null> {
+    const { data, error } = await this.db
+      .from(TABLE)
+      .select()
+      .eq("eventid", eventId)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data as Badge | null;
+  }
+
+  /**
    * Retrieves all {@link Badge}s from the database.
    * @returns An array of all badges, newest first.
    */
