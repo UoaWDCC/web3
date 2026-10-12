@@ -105,6 +105,7 @@ model events {
   event_path          String?
   location            String?
   capacity            Int?
+  registration_url    String?
   attendance_records  attendance_records[]
   badges              badges?
   event_registrations event_registrations[]
