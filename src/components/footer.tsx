@@ -1,8 +1,17 @@
 import { Instagram, Linkedin } from "lucide-react";
 
+// Theme tokens from the design:
+// Light: bg #FFFFFF @ 60%, headings #000000, other text #57595D
+// Dark:  bg #404246 @ 60%, headings #FFFFFF, other text #E3DFDF
+const heading = "text-black dark:text-white";
+const body = "text-[#57595D] dark:text-[#E3DFDF]";
+const bodyHover = "hover:text-black dark:hover:text-white";
+const socialButton =
+  "w-10 h-10 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center text-black dark:text-white hover:bg-primary hover:text-white transition-colors duration-300";
+
 export function Footer() {
   return (
-    <footer className="bg-foreground text-background">
+    <footer className="bg-white/60 dark:bg-[#404246]/60 backdrop-blur-md">
       <div className="container mx-auto px-4">
         {/* Main footer content */}
         <div className="py-20 grid grid-cols-1 md:grid-cols-4 gap-12 lg:gap-8 max-w-7xl mx-auto items-start">
@@ -12,13 +21,15 @@ export function Footer() {
               <img
                 src="/logo/web3uoa_logo.png"
                 alt="WEB3UOA"
-                className="w-10 h-10 shrink-0 brightness-0 invert"
+                className="w-10 h-10 shrink-0"
               />
-              <span className="text-2xl font-black tracking-tight whitespace-nowrap">
+              <span
+                className={`text-2xl font-black tracking-tight whitespace-nowrap ${heading}`}
+              >
                 WEB3UOA
               </span>
             </div>
-            <p className="text-background/70 leading-relaxed max-w-sm text-lg">
+            <p className={`${body} leading-relaxed max-w-sm text-lg`}>
               Empowering the next generation of builders, shapers, and
               innovators at the University of Auckland.
             </p>
@@ -26,31 +37,30 @@ export function Footer() {
 
           {/* Quick links */}
           <div className="space-y-6">
-            <h3 className="font-bold text-lg text-white">Navigate</h3>
+            <h3 className={`font-bold text-lg ${heading}`}>Navigate</h3>
             <div className="flex flex-col gap-4">
               <a
                 href="/pages/about"
-                className="text-base text-background/70 hover:text-white transition-colors w-fit font-semibold"
+                className={`text-base ${body} ${bodyHover} transition-colors w-fit font-semibold`}
               >
                 About
               </a>
               <a
                 href="/pages/events"
-                className="text-base text-background/70 hover:text-white transition-colors w-fit font-semibold"
+                className={`text-base ${body} ${bodyHover} transition-colors w-fit font-semibold`}
               >
                 Events
               </a>
               <a
                 href="/pages/partners"
-                className="text-base text-background/70 hover:text-white transition-colors w-fit font-semibold"
+                className={`text-base ${body} ${bodyHover} transition-colors w-fit font-semibold`}
               >
                 Partners
               </a>
               <a
-                href="https://forms.gle/vzRb7t46SPBUwi7v8"
-                target="_blank"
+                href="/pages/join-us"
                 rel="noopener noreferrer"
-                className="text-base text-primary hover:text-primary/80 transition-colors w-fit font-bold"
+                className="text-base text-primary hover:text-primary/80 dark:text-white dark:hover:text-white/80 transition-colors w-fit font-bold"
               >
                 Join the Club
               </a>
@@ -59,13 +69,13 @@ export function Footer() {
 
           {/* Connect */}
           <div className="space-y-6">
-            <h3 className="font-bold text-lg text-white">Connect</h3>
+            <h3 className={`font-bold text-lg ${heading}`}>Connect</h3>
             <div className="flex gap-4">
               <a
                 href="https://instagram.com/web3uoa"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-background/10 flex items-center justify-center text-white hover:bg-primary transition-colors duration-300"
+                className={socialButton}
                 aria-label="Instagram"
               >
                 <Instagram className="w-5 h-5" />
@@ -74,7 +84,7 @@ export function Footer() {
                 href="https://x.com/web3uoa"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-background/10 flex items-center justify-center text-white hover:bg-primary transition-colors duration-300"
+                className={socialButton}
                 aria-label="X (Twitter)"
               >
                 <svg
@@ -90,7 +100,7 @@ export function Footer() {
                 href="https://www.linkedin.com/company/web3uoa-university-of-auckland-web3-club/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-background/10 flex items-center justify-center text-white hover:bg-primary transition-colors duration-300"
+                className={socialButton}
                 aria-label="LinkedIn"
               >
                 <Linkedin className="w-5 h-5" />
@@ -98,7 +108,7 @@ export function Footer() {
             </div>
             <a
               href="mailto:team@web3uoa.nz"
-              className="text-base text-background/70 hover:text-white transition-colors block w-fit font-medium"
+              className={`text-base ${body} ${bodyHover} transition-colors block w-fit font-medium`}
             >
               team@web3uoa.nz
             </a>
@@ -106,7 +116,9 @@ export function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="py-8 border-t border-background/20 flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-2 sm:gap-4 text-sm text-background/50 font-medium text-center">
+        <div
+          className={`py-8 border-t border-black/10 dark:border-white/20 flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-2 sm:gap-4 text-sm ${body} font-medium text-center`}
+        >
           <p>&copy; {new Date().getFullYear()} WEB3UOA. All rights reserved.</p>
           <p>University of Auckland Web3 Club</p>
         </div>
