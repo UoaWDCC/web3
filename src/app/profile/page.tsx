@@ -1,10 +1,15 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useWallet } from "@/hooks/use-wallet";
 import { WalletButton } from "@/components/wallet-button";
-import { Copy, CheckCheck, PenTool } from "lucide-react";
+import { CheckCheck, Copy, PenTool } from "lucide-react";
 import { RegistrationService } from "@/services/registrations/registrations-service";
+import { useSignMessage } from "wagmi";
+import { ProfileVisibilityToggle } from "@/components/profile-visibility-toggle";
+import { IoQrCode } from "react-icons/io5";
+import QrCode from "qrcode";
+import { AttendedEvents } from "@/components/attended-events";
 
 const getErrorMessage = (error: unknown) => {
   if (error instanceof Error) {
@@ -20,6 +25,7 @@ const getErrorMessage = (error: unknown) => {
 
 export default function ProfilePage() {
   const { address, isConnected, disconnect, mounted } = useWallet();
+  const { signMessageAsync } = useSignMessage();
   const [copied, setCopied] = useState(false);
   const [displayName, setDisplayName] = useState("Name");
   const [isEditingName, setIsEditingName] = useState(false);
@@ -30,6 +36,93 @@ export default function ProfilePage() {
   const [walletRegistered, setWalletRegistered] = useState(false);
   const [walletChecking, setWalletChecking] = useState(true);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [profileVisible, setProfileVisible] = useState(true);
+  const [visibilitySaving, setVisibilitySaving] = useState(false);
+
+  // Personal check-in QR, shown in a hover card on the profile card.
+  const [qrHovered, setQrHovered] = useState(false);
+  const [qrPayload, setQrPayload] = useState<string | null>(null);
+  const [qrImage, setQrImage] = useState<string | null>(null);
+  const [qrLoading, setQrLoading] = useState(false);
+  const [qrError, setQrError] = useState<string | null>(null);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const qrContainerRef = useRef<HTMLDivElement>(null);
+
+  // Theme is toggled elsewhere by adding/removing "dark" on <html>, so we
+  // just watch for that instead of pulling in a theme context here.
+  useEffect(() => {
+    const html = document.documentElement;
+    setIsDarkMode(html.classList.contains("dark"));
+
+    const observer = new MutationObserver(() => {
+      setIsDarkMode(html.classList.contains("dark"));
+    });
+    observer.observe(html, { attributes: true, attributeFilter: ["class"] });
+
+    return () => observer.disconnect();
+  }, []);
+
+  // Re-render the QR whenever the payload or theme changes, so it stays
+  // black-on-white in light mode and white-on-transparent in dark mode.
+  useEffect(() => {
+    if (!qrPayload) return;
+
+    QrCode.toDataURL(qrPayload, {
+      errorCorrectionLevel: "H",
+      margin: 2,
+      color: { dark: "#000000", light: "#FFFFFF" },
+    })
+      .then(setQrImage)
+      .catch((error) => setQrError(getErrorMessage(error)));
+  }, [qrPayload]);
+
+  // Closes the qr code popup when tapping outside, since it can be opened by tapping on
+  // touch devices where there's no mouseleave to fall back on.
+  useEffect(() => {
+    if (!qrHovered) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (
+        qrContainerRef.current &&
+        !qrContainerRef.current.contains(event.target as Node)
+      ) {
+        setQrHovered(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [qrHovered]);
+
+  const loadQr = async () => {
+    if (!address || qrPayload || qrLoading) return;
+
+    setQrError(null);
+    setQrLoading(true);
+    try {
+      const timestamp = Date.now().toString();
+      const signature = await signMessageAsync({
+        message: `Wallet Auth ${timestamp}`,
+      });
+
+      const res = await fetch("/api/user/qr", {
+        headers: {
+          "x-wallet-address": address,
+          "x-wallet-signature": signature,
+          "x-wallet-timestamp": timestamp,
+        },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to load QR code");
+
+      setQrPayload(data.qrPayload);
+    } catch (error) {
+      console.error("Failed to load personal QR code", error);
+      setQrError(getErrorMessage(error));
+    } finally {
+      setQrLoading(false);
+    }
+  };
 
   const copyAddress = () => {
     if (!address) return;
@@ -82,6 +175,7 @@ export default function ProfilePage() {
     const loadProfile = async () => {
       if (!address) {
         setWalletRegistered(false);
+        setProfileVisible(true);
         setWalletChecking(false);
         setProfileLoading(false);
         return;
@@ -92,9 +186,8 @@ export default function ProfilePage() {
       setStatusMessage(null);
 
       try {
-        const isRegistered = await RegistrationService.isWalletRegistered(
-          address,
-        );
+        const isRegistered =
+          await RegistrationService.isWalletRegistered(address);
 
         if (cancelled) return;
 
@@ -104,6 +197,7 @@ export default function ProfilePage() {
           setProfileImage(null);
           setBadges([]);
           setEventsAttended([]);
+          setProfileVisible(true);
           setStatusMessage("This wallet is not linked yet.");
           return;
         }
@@ -123,15 +217,18 @@ export default function ProfilePage() {
                 .join(" ")
                 .trim();
 
+          const attended = registration.events_attended || [];
           setDisplayName(displayNameFallback || "Name");
           setProfileImage(registration.profile_picture_url || null);
           setBadges(registration.badges || []);
-          setEventsAttended(registration.events_attended || []);
+          setEventsAttended(attended);
+          setProfileVisible(registration.profile_visible ?? true);
         } else {
           setDisplayName("Name");
           setProfileImage(null);
           setBadges([]);
           setEventsAttended([]);
+          setProfileVisible(true);
           setStatusMessage("No profile data found for this wallet.");
         }
       } catch (error) {
@@ -192,6 +289,54 @@ export default function ProfilePage() {
     }
   };
 
+  const handleVisibilityToggle = async () => {
+    if (!address || visibilitySaving) {
+      return;
+    }
+
+    const nextVisible = !profileVisible;
+    setVisibilitySaving(true);
+    setStatusMessage(
+      `Confirm in your wallet to ${nextVisible ? "show" : "hide"} your profile. This signature is free.`,
+    );
+
+    try {
+      const challenge =
+        await RegistrationService.requestProfileVisibilityChallenge({
+          walletAddress: address,
+          visible: nextVisible,
+        });
+      const signature = await signMessageAsync({
+        message: challenge.message,
+      });
+      const result = await RegistrationService.updateProfileVisibility({
+        walletAddress: address,
+        visible: nextVisible,
+        challenge,
+        signature,
+      });
+
+      setProfileVisible(result.visible);
+      setStatusMessage(
+        result.visible
+          ? "Your profile is visible in member search."
+          : "Your profile is hidden and can no longer be found in member search.",
+      );
+    } catch (error) {
+      const message = getErrorMessage(error);
+      const rejected = /reject|denied|cancel/i.test(message);
+
+      console.error("Failed to update profile visibility", error);
+      setStatusMessage(
+        rejected
+          ? "Visibility was not changed because the signature was cancelled."
+          : `Unable to change profile visibility: ${message}`,
+      );
+    } finally {
+      setVisibilitySaving(false);
+    }
+  };
+
   if (!mounted) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -202,7 +347,7 @@ export default function ProfilePage() {
 
   if (!isConnected || !walletRegistered) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[linear-gradient(180deg,_#AFDCF1_0%,_#ADD8F2_27%,_#D3B7F3_100%)] text-foreground dark:bg-[linear-gradient(180deg,_#CAC1F7_0%,_#A8A1CA_21%,_#7B7890_59%,_#5C5A66_86%,_#6B6A7A_100%)] dark:text-white">
+      <div className="min-h-screen flex items-center justify-center bg-[linear-gradient(180deg,_#AFDCF1_0%,_#ADD8F2_27%,_#D3B7F3_100%)] text-foreground dark:bg-[linear-gradient(180deg,_#BDB5D1_0%,_#ABA2C2_21%,_#9287AF_59%,_#7F759C_86%,_#8E84AA_100%)] dark:text-white">
         <div className="text-center space-y-6 max-w-sm mx-auto px-4">
           <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto dark:border-white/20 dark:bg-white/10">
             <img
@@ -230,9 +375,51 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen w-screen flex flex-col gap-16 justify-center items-center bg-[linear-gradient(180deg,_#AFDCF1_0%,_#ADD8F2_27%,_#D3B7F3_100%)] px-4 md:px-0 pt-32 pb-24 text-foreground dark:bg-[linear-gradient(180deg,_#CAC1F7_0%,_#A8A1CA_21%,_#7B7890_59%,_#5C5A66_86%,_#6B6A7A_100%)] dark:text-white">
+    <div className="min-h-screen w-screen flex flex-col gap-16 justify-center items-center bg-[linear-gradient(180deg,_#AFDCF1_0%,_#ADD8F2_27%,_#D3B7F3_100%)] px-4 md:px-0 pt-32 pb-24 text-foreground dark:bg-[linear-gradient(180deg,_#BDB5D1_0%,_#ABA2C2_21%,_#9287AF_59%,_#7F759C_86%,_#8E84AA_100%)] dark:text-white">
       {/* Profile Card */}
       <div className="relative bg-white/80 w-full max-w-[90vw] lg:w-[80vw] lg:max-w-[90vw] p-8 lg:p-15 rounded-2xl overflow-visible shadow-lg dark:bg-[#404246]/85 dark:shadow-black/20">
+        <div
+          ref={qrContainerRef}
+          className="absolute top-4 right-4 z-40"
+          onMouseEnter={() => {
+            setQrHovered(true);
+            loadQr();
+          }}
+          onMouseLeave={() => setQrHovered(false)}
+        >
+          <button
+            onClick={() => {
+              setQrHovered((open) => !open);
+              loadQr();
+            }}
+            className="text-muted-foreground hover:text-primary transition-colors dark:text-white dark:hover:text-[#A3DEF4]"
+            aria-label="Show my check-in QR code"
+          >
+            <IoQrCode className="w-6 h-6" />
+          </button>
+          {qrHovered && (
+            <div className="absolute right-0 top-full mt-2 bg-white dark:bg-[#2f3136] rounded-2xl p-5 shadow-xl w-64 flex flex-col items-center gap-3">
+              <p className="text-sm font-bold text-center">
+                Scan QR code for attendance
+              </p>
+              <div className="w-48 h-48 border-2 border-foreground/80 dark:border-white/60 rounded-xl flex items-center justify-center overflow-hidden">
+                {qrLoading ? (
+                  <p className="text-xs text-muted-foreground dark:text-white/70 text-center px-2">
+                    Loading…
+                  </p>
+                ) : qrError ? (
+                  <p className="text-xs text-red-500 text-center px-2">{qrError}</p>
+                ) : qrImage ? (
+                  <img
+                    src={qrImage}
+                    alt="Your personal check-in QR code"
+                    className="w-full h-full object-contain"
+                  />
+                ) : null}
+              </div>
+            </div>
+          )}
+        </div>
         <div className="flex flex-col items-center lg:items-start text-center lg:text-left gap-6 lg:gap-8">
           <div className="relative w-32 h-32 rounded-full bg-white flex items-center justify-center overflow-hidden lg:absolute lg:-left--16 lg:top-1/2 lg:-translate-y-1/2 lg:w-[280px] lg:h-[280px] dark:bg-[#2f3136]">
             {profileImage ? (
@@ -316,6 +503,14 @@ export default function ProfilePage() {
                 {statusMessage}
               </div>
             ) : null}
+
+            <div className="mt-6 flex justify-center md:justify-start">
+              <ProfileVisibilityToggle
+                visible={profileVisible}
+                saving={visibilitySaving}
+                onToggle={handleVisibilityToggle}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -356,29 +551,14 @@ export default function ProfilePage() {
           <p className="text-2xl font-bold">Events Attended</p>
 
           <div className="mt-8">
-            {profileLoading ? (
-              <p className="text-muted-foreground dark:text-white/70">
-                Loading event history…
-              </p>
-            ) : eventsAttended.length > 0 ? (
-              <div className="space-y-4">
-                {eventsAttended.map((eventName, index) => (
-                  <div
-                    key={`${eventName}-${index}`}
-                    className="rounded-3xl bg-primary/10 px-4 py-4 sm:px-6 sm:py-5 dark:bg-white/10"
-                  >
-                    <p className="font-semibold text-lg">{eventName}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground dark:text-white/70">
-                No events attended yet.
-              </p>
-            )}
+            <AttendedEvents
+              attendanceReferences={eventsAttended}
+              profileLoading={profileLoading}
+            />
           </div>
         </div>
       </div>
+
     </div>
   );
 }

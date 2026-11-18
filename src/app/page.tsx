@@ -1,7 +1,6 @@
 import { Hero } from "@/components/hero";
 import { EnsClaim } from "@/components/ens-claim";
 import { About } from "@/components/about";
-import { Events } from "@/components/events";
 import { Sponsors } from "@/components/sponsors";
 import { BadgeCheck, Wallet, Globe } from "lucide-react";
 
@@ -69,9 +68,8 @@ export default function Home() {
       </section>
       */}
 
-      {/* don't know if still need the about/events/sponsors sections, so commenting out for now */}
+      {/* don't know if still need the about/sponsors sections, so commenting out for now */}
       {/* <About />*/}
-      {/*<Events />*/}
       {/*<Sponsors />*/}
     </main>
   );

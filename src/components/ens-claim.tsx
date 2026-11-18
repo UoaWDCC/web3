@@ -5,6 +5,7 @@ import { useWallet } from "@/hooks/use-wallet";
 import { WalletButton } from "@/components/wallet-button";
 import { Button } from "./ui/button";
 import { RegistrationService } from "../services/registrations/registrations-service";
+import { useSignMessage } from "wagmi";
 
 interface Claim {
   id: string;
@@ -24,6 +25,8 @@ export function EnsClaim() {
   const [walletEmptyStatus, setWalletEmptyStatus] = useState<"idle" | "checking" | "valid" | "invalid">("idle");
   const canConnect = emailStatus === "valid" && walletEmptyStatus === "valid";
   const [walletSaved, setWalletSaved] = useState(false);
+  const [unlinking, setUnlinking] = useState(false);
+  const { signMessageAsync } = useSignMessage();
   
 
   useEffect(() => {
@@ -129,7 +132,43 @@ export function EnsClaim() {
       setLoading(false);
     }
   };
+  const unlinkClaim = async (claimId: string) => {
+  if (!address) return;
+  if (!confirm("Are you sure you want to unlink this name? This cannot be undone.")) return;
 
+  setUnlinking(true);
+  setError("");
+
+  try {
+    const timestamp = Date.now().toString();
+    const signature = await signMessageAsync({
+      message: `Unlink claim ${timestamp}`,
+    });
+
+    const res = await fetch("/api/claims", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        walletAddress: address,
+        claimId,
+        signature,
+        timestamp,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || "Failed to unlink claim.");
+    }
+
+    fetchClaims();
+  } catch (err: any) {
+    setError(err.message || "Failed to unlink claim.");
+  } finally {
+    setUnlinking(false);
+  }
+};
   if (!mounted) return null;
 
   if (!isConnected) {
@@ -254,28 +293,41 @@ export function EnsClaim() {
           <div className="flex flex-col gap-2">
             {claims.map((claim) => (
               <div
-                key={claim.id}
-                className="flex items-center justify-between bg-background/50 p-3 rounded-xl border border-border/50"
-              >
-                <span className="font-medium">
-                  {claim.requestedName}.web3uoa.eth
-                </span>
-                <span
-                  className={`text-xs font-bold px-2 py-1 rounded-full ${
-                    claim.status === "APPROVED"
-                      ? "bg-green-500/20 text-green-500"
-                      : claim.status === "REJECTED"
-                        ? "bg-red-500/20 text-red-500"
-                        : "bg-yellow-500/20 text-yellow-500"
-                  }`}
-                >
-                  {claim.status}
-                </span>
-              </div>
-            ))}
+    key={claim.id}
+    className="flex items-center justify-between bg-background/50 p-3 rounded-xl border border-border/50"
+  >
+    <span className="font-medium">
+      {claim.requestedName}.web3uoa.eth
+    </span>
+    <div className="flex items-center gap-2">
+      <span
+        className={`text-xs font-bold px-2 py-1 rounded-full ${
+          claim.status === "APPROVED"
+            ? "bg-green-500/20 text-green-500"
+            : claim.status === "REJECTED"
+              ? "bg-red-500/20 text-red-500"
+              : "bg-yellow-500/20 text-yellow-500"
+        }`}
+      >
+        {claim.status}
+      </span>
+      {claim.status === "APPROVED" && (
+        <button
+          onClick={() => unlinkClaim(claim.id)}
+          disabled={unlinking}
+          className="text-xs font-bold text-red-500 hover:underline disabled:opacity-50"
+        >
+          Unlink
+        </button>
+      )}
+    </div>
+  </div>
+))}
           </div>
         </div>
       )}
     </div>
   );
 }
+
+

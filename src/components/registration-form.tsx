@@ -14,6 +14,7 @@ import {
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormInput, FormSelect } from "./ui/form-field";
+import { Button } from "./ui/button";
 import { RegistrationService } from "../services/registrations/registrations-service";
 
 /**
@@ -29,12 +30,12 @@ export function RegistrationForm() {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
     reset,
     watch,
     setValue,
     clearErrors,
-    setError
+    setError,
   } = useForm<RegistrationData>({
     resolver: zodResolver(RegistrationSchema),
   });
@@ -91,27 +92,37 @@ export function RegistrationForm() {
 
   /**
    * Handles the form submission.
-   * Validates the form data, checks if the email is already taken,
-   * submits the registration data, and resets the form.
+   * Validates and submits the registration data, then resets the form.
+   * Email uniqueness is enforced atomically by the database.
    *
    * @param {RegistrationData} data - The validated form data.
    */
   const onSubmit: SubmitHandler<RegistrationData> = async (data) => {
-    console.log("Submitting", data);
+    try {
+      await RegistrationService.submitRegistration(data);
 
-    const emailTaken = await RegistrationService.isEmailTaken(data.email);
-    if (emailTaken) {
-      setError("email", {
-        type: "custom",
-        message: "This email is already registered"
-      })
-      return;
+      reset();
+      setFinishedForm(true);
+    } catch (error) {
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        error.code === "23505"
+      ) {
+        setError("email", {
+          type: "server",
+          message: "This email is already registered",
+        });
+        return;
+      }
+
+      console.error("Unable to submit registration", error);
+      setError("root", {
+        type: "server",
+        message: "Unable to submit your registration. Please try again.",
+      });
     }
-
-    await RegistrationService.submitRegistration(data);
-
-    reset();
-    setFinishedForm(true);
   };
 
   return (
@@ -256,14 +267,21 @@ export function RegistrationForm() {
             {...register("goal_statement")}
           />
 
-          <button
+          {errors.root?.message && (
+            <p className="w-full max-w-[680px] text-sm font-semibold text-red-700">
+              {errors.root.message}
+            </p>
+          )}
+
+          <Button
             type="submit"
-            className="mt-4 mx-auto w-full sm:w-54 rounded-xl px-4 py-2.5 text-2xl font-bold shadow-sm cursor-pointer 
-            bg-white text-button-txt transition-colors hover:bg-button-txt hover:text-white
-            border-2 border-button-txt"
+            disabled={isSubmitting}
+            variant="pill"
+            size="lg"
+            className="text-base px-13 h-12 rounded-2xl mt-5"
           >
-            Submit
-          </button>
+            {isSubmitting ? "Submitting..." : "Submit"}
+          </Button>
         </form>
       )}
     </div>

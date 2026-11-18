@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPrisma } from "@/lib/prisma";
-import { deleteName } from "@/lib/namestone";
+import { deleteName } from "@/lib/namespace";
 import { verifyMessage } from "viem";
-import { isAllowedAdminAddress } from "@/lib/admin-auth";
+import { isAdminAddress } from "@/lib/admin-auth-server";
 
 async function verifyAdminAuth(req: NextRequest) {
   const address = req.headers.get("x-admin-address")?.toLowerCase();
   const signature = req.headers.get("x-admin-signature");
   const timestamp = req.headers.get("x-admin-timestamp");
 
-  if (!address || !signature || !timestamp || !isAllowedAdminAddress(address))
+  if (!address || !signature || !timestamp || !(await isAdminAddress(address)))
     return false;
   if (Date.now() - parseInt(timestamp) > 5 * 60 * 1000) return false;
 
@@ -29,24 +29,24 @@ export async function POST(req: NextRequest) {
   if (!isAuth)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  
-  
   try {
     const prisma = getPrisma();
-    const { name, claimId } = await req.json();
+    const { name } = await req.json();
 
-    // Delete from NameStone
     await deleteName({
       domain: "web3uoa.eth",
       name,
     });
 
-    if (claimId) {
-      await prisma.claimRequest.update({
-        where: { id: claimId },
-        data: { status: "REJECTED" }, // or we could delete the record
-      });
-    }
+    // Find and reject the matching approved claim, since the frontend
+    // only sends the name, not the ClaimRequest id.
+    await prisma.claimRequest.updateMany({
+      where: {
+        requestedName: name.toLowerCase(),
+        status: "APPROVED",
+      },
+      data: { status: "REJECTED" },
+    });
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

@@ -1,0 +1,47 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+const tabs = [
+  { label: "Overview", href: "/admin" },
+  { label: "Events", href: "/admin/events" },
+  { label: "Claim ID", href: "/admin/claims" },
+  { label: "Attendance", href: "/admin/attendance" },
+  { label: "Admin Users", href: "/admin/list" },
+];
+
+/**
+ * Pill tab bar for the admin sections. Identical markup on desktop and
+ * mobile — it scrolls horizontally rather than collapsing into a menu.
+ */
+export function AdminNav() {
+  const pathname = usePathname();
+
+  // "/admin" must match exactly, or the Overview tab lights up on every
+  // sub-route. The site navbar uses startsWith, which would be wrong here.
+  const isActive = (href: string) =>
+    href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
+
+  return (
+    <nav
+      aria-label="Admin sections"
+      className="flex min-w-0 gap-2 overflow-x-auto rounded-2xl bg-white/40 p-1.5 sm:w-fit sm:rounded-full dark:bg-white/10"
+    >
+      {tabs.map((tab) => (
+        <Link
+          key={tab.href}
+          href={tab.href}
+          aria-current={isActive(tab.href) ? "page" : undefined}
+          className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-semibold transition-colors sm:px-5 sm:text-base ${
+            isActive(tab.href)
+              ? "bg-[#3F65E2] text-white dark:bg-[#A3DEF4] dark:text-black"
+              : "text-hero-text hover:bg-white/50 dark:hover:bg-white/10"
+          }`}
+        >
+          {tab.label}
+        </Link>
+      ))}
+    </nav>
+  );
+}
