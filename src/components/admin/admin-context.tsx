@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { useSignMessage } from "wagmi";
+import { useWallet } from "@/hooks/use-wallet";
 
 import type { ClubEvent } from "@/lib/events";
 import {
@@ -10,6 +11,16 @@ import {
   type AdminClaim,
   type AdminHeaders,
 } from "@/components/admin/use-admin";
+
+const ADMIN_AUTH_STORAGE_KEY = "web3uoa.adminAuth";
+const AUTH_TTL_MS = 3 * 60 * 60 * 1000; // 3 hours
+
+function isFreshAdminAuth(headers: AdminHeaders | null) {
+  if (!headers) return false;
+  const timestamp = Number(headers["x-admin-timestamp"]);
+  if (!Number.isFinite(timestamp)) return false;
+  return Date.now() - timestamp <= AUTH_TTL_MS;
+}
 
 /**
  * Holds admin auth and shared data for every route under /admin.
@@ -20,14 +31,47 @@ import {
  */
 export function AdminProvider({ children }: { children: ReactNode }) {
   const { signMessageAsync } = useSignMessage();
+  const { address, mounted } = useWallet();
 
-  const [authHeader, setAuthHeader] = useState<AdminHeaders | null>(null);
+  const [authHeader, setAuthHeaderState] = useState<AdminHeaders | null>(null);
   const [claims, setClaims] = useState<AdminClaim[]>([]);
   const [activeNames, setActiveNames] = useState<ActiveName[]>([]);
   const [events, setEvents] = useState<ClubEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [namesError, setNamesError] = useState<string | null>(null);
+
+   const setAuthHeader = (headers: AdminHeaders | null) => {
+    setAuthHeaderState(headers);
+    if (headers) {
+      sessionStorage.setItem(ADMIN_AUTH_STORAGE_KEY, JSON.stringify(headers));
+    } else {
+      sessionStorage.removeItem(ADMIN_AUTH_STORAGE_KEY);
+    }
+  };
+
+  // Restore on mount / when wallet address becomes available
+  useEffect(() => {
+    if (!mounted || !address) return;
+
+    const raw = sessionStorage.getItem(ADMIN_AUTH_STORAGE_KEY);
+    if (!raw) return;
+
+    try {
+      const parsed = JSON.parse(raw) as AdminHeaders;
+      const sameAddress =
+        parsed["x-admin-address"]?.toLowerCase() === address.toLowerCase();
+
+      if (sameAddress && isFreshAdminAuth(parsed)) {
+        setAuthHeaderState(parsed);
+        void fetchData(parsed); // repopulate claims/names/events too
+      } else {
+        sessionStorage.removeItem(ADMIN_AUTH_STORAGE_KEY);
+      }
+    } catch {
+      sessionStorage.removeItem(ADMIN_AUTH_STORAGE_KEY);
+    }
+  }, [mounted, address]);
 
   const fetchData = async (headers?: AdminHeaders) => {
     const requestHeaders = headers ?? authHeader;

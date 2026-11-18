@@ -9,15 +9,46 @@ export type ClubEvent = {
   start_time: string | null;
   end_time: string | null;
   location: string | null;
-  capacity: number | null;
   event_url: string | null;
   event_path: string | null;
-  // Used by the admin check-in flow; not surfaced on the public events page.
-  check_in_open_time?: string | null;
-  check_in_close_time?: string | null;
+  // Luma registration page the Register button opens.
+  registration_url: string | null;
 };
 
-export type EventStatus = "open" | "full" | "closed";
+export type EventStatus = "open" | "closed";
+
+const LUMA_HOSTS = ["lu.ma", "luma.com"];
+
+/**
+ * Validates an admin-entered Luma link. Returns null for an empty value and
+ * throws when the link is not an https Luma URL, since it is rendered as a
+ * public link on the event page.
+ */
+export function normalizeRegistrationUrl(raw: unknown) {
+  if (raw != null && typeof raw !== "string") {
+    throw new Error("Registration link must be a valid URL");
+  }
+  const value = raw?.trim();
+  if (!value) return null;
+
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new Error("Registration link must be a valid URL");
+  }
+
+  const host = url.hostname.toLowerCase();
+  const isLuma = LUMA_HOSTS.some(
+    (lumaHost) => host === lumaHost || host.endsWith(`.${lumaHost}`),
+  );
+
+  if (url.protocol !== "https:" || !isLuma) {
+    throw new Error("Registration link must be an https lu.ma or luma.com URL");
+  }
+
+  return url.toString();
+}
 
 /** The moment an event is considered over. Falls back to start when there is no end. */
 const getEventEnd = (event: ClubEvent) => {
@@ -32,19 +63,11 @@ export function isPastEvent(event: ClubEvent, now = Date.now()) {
 }
 
 /**
- * The single place event status is decided.
- *
- * `registeredCount` is always 0 today because registrations are not built yet,
- * which makes "full" unreachable. Once registrations land, pass the real count
- * here and the "Full" chip starts working with no other changes.
+ * The single place event status is decided. Capacity is managed on Luma, so
+ * the site only distinguishes upcoming from finished events.
  */
-export function getEventStatus(
-  event: ClubEvent,
-  registeredCount = 0,
-): EventStatus {
-  if (isPastEvent(event)) return "closed";
-  if (event.capacity != null && registeredCount >= event.capacity) return "full";
-  return "open";
+export function getEventStatus(event: ClubEvent): EventStatus {
+  return isPastEvent(event) ? "closed" : "open";
 }
 
 /** Splits events into upcoming (soonest first) and past (most recent first). */

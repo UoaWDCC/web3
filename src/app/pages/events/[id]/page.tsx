@@ -71,7 +71,10 @@ export default async function EventDetailPage({
             )}
 
             <div className="mt-2">
-              <RegisterButton eventTitle={title} isPast={isPastEvent(event)} />
+              <RegisterButton
+                registrationUrl={event.registration_url}
+                isPast={isPastEvent(event)}
+              />
             </div>
           </div>
         </div>

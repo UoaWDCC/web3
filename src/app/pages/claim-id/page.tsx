@@ -1,4 +1,4 @@
-// import { EnsClaim } from "@/components/ens-claim"; // ← unsued component
+import { EnsClaim } from "@/components/ens-claim"; 
 import { BadgeCheck, Wallet, Globe } from "lucide-react";
 import { WalletButton } from "@/components/wallet-button";
 
@@ -86,7 +86,8 @@ export default function ClaimIdPage() {
           <div className="flex justify-center">
             <WalletButton />
           </div>
-
+          
+            <EnsClaim />
         </div>
 
       </div>

@@ -2,11 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import QrScanner from "qr-scanner";
-import { useSignMessage } from "wagmi";
 import { SectionCard } from "@/components/admin/section-card";
 import { Button } from "@/components/ui/button";
 import { WalletButton } from "@/components/wallet-button";
-import { useWallet } from "@/hooks/use-wallet";
+import { useAdminAuth } from "@/hooks/use-admin-auth";
 
 type AdminAuthHeaders = {
   "x-admin-address": string;
@@ -20,13 +19,16 @@ type AdminEventSummary = {
   start_time: string;
 };
 
-const ADMIN_AUTH_STORAGE_KEY = "web3uoa.adminAuth";
+type Attendee = {
+  id: number;
+  name: string;
+};
+
+// const ADMIN_AUTH_STORAGE_KEY = "web3uoa.adminAuth";
 
 export default function AdminAttendancePage() {
-  const { address, isConnected, mounted } = useWallet();
-  const { signMessageAsync } = useSignMessage();
 
-  const [authHeader, setAuthHeader] = useState<AdminAuthHeaders | null>(null);
+  const { mounted, isConnected, address, authHeader, signAdminAuth, clearAdminAuth } = useAdminAuth();
   const [events, setEvents] = useState<AdminEventSummary[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -40,48 +42,14 @@ export default function AdminAttendancePage() {
     alreadyCheckedIn: boolean;
   } | null>(null);
   const [scanError, setScanError] = useState("");
+  const [attendees, setAttendees] = useState<Attendee[]>([]);
+  const [attendeesLoading, setAttendeesLoading] = useState(false);
+  const [attendeesError, setAttendeesError] = useState("");
+  const [attendeesRefreshVersion, setAttendeesRefreshVersion] = useState(0);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const qrScannerRef = useRef<QrScanner | null>(null);
   const processingScanRef = useRef(false);
-
-  const isFreshAdminAuth = (headers: AdminAuthHeaders | null) => {
-    if (!headers) return false;
-    const timestamp = Number(headers["x-admin-timestamp"]);
-    if (!Number.isFinite(timestamp)) return false;
-    return Date.now() - timestamp <= 4 * 60 * 60 * 1000;
-  };
-
-  const saveAdminAuth = (headers: AdminAuthHeaders) => {
-    setAuthHeader(headers);
-    sessionStorage.setItem(ADMIN_AUTH_STORAGE_KEY, JSON.stringify(headers));
-  };
-
-  const clearAdminAuth = () => {
-    setAuthHeader(null);
-    sessionStorage.removeItem(ADMIN_AUTH_STORAGE_KEY);
-  };
-
-  useEffect(() => {
-    if (!mounted || !address) return;
-
-    const raw = sessionStorage.getItem(ADMIN_AUTH_STORAGE_KEY);
-    if (!raw) return;
-
-    try {
-      const parsed = JSON.parse(raw) as AdminAuthHeaders;
-      const sameAddress =
-        parsed["x-admin-address"]?.toLowerCase() === address.toLowerCase();
-
-      if (sameAddress && isFreshAdminAuth(parsed)) {
-        setAuthHeader(parsed);
-      } else {
-        sessionStorage.removeItem(ADMIN_AUTH_STORAGE_KEY);
-      }
-    } catch {
-      sessionStorage.removeItem(ADMIN_AUTH_STORAGE_KEY);
-    }
-  }, [mounted, address]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -89,24 +57,6 @@ export default function AdminAttendancePage() {
       clearAdminAuth();
     }
   }, [mounted, isConnected, address]);
-
-  const signAdminAuth = async () => {
-    if (!address) throw new Error("Wallet not connected");
-
-    const timestamp = Date.now().toString();
-    const signature = await signMessageAsync({
-      message: `Admin Auth ${timestamp}`,
-    });
-
-    const headers: AdminAuthHeaders = {
-      "x-admin-address": address,
-      "x-admin-signature": signature,
-      "x-admin-timestamp": timestamp,
-    };
-
-    saveAdminAuth(headers);
-    return headers;
-  };
 
   const fetchEvents = async (headers: AdminAuthHeaders) => {
     setEventsLoading(true);
@@ -136,6 +86,44 @@ export default function AdminAttendancePage() {
     if (!authHeader) return;
     void fetchEvents(authHeader);
   }, [authHeader]);
+
+  useEffect(() => {
+    if (!authHeader || !checkinEventId) {
+      setAttendees([]);
+      setAttendeesError("");
+      setAttendeesLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setAttendeesLoading(true);
+    setAttendees([]);
+    setAttendeesError("");
+
+    fetch(
+      `/api/admin/checkin/attendees?eventId=${encodeURIComponent(checkinEventId)}`,
+      { headers: authHeader },
+    )
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to load attendees");
+        if (!cancelled) setAttendees(Array.isArray(data) ? data : []);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setAttendees([]);
+        setAttendeesError(
+          err instanceof Error ? err.message : "Failed to load attendees",
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setAttendeesLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authHeader, checkinEventId, attendeesRefreshVersion]);
 
   const authenticate = async () => {
     try {
@@ -200,6 +188,22 @@ export default function AdminAttendancePage() {
         name: data.member.name,
         alreadyCheckedIn: data.alreadyCheckedIn,
       });
+
+      try {
+        const attendeesResponse = await fetch(
+          `/api/admin/checkin/attendees?eventId=${encodeURIComponent(checkinEventId)}`,
+          { headers: authHeader },
+        );
+        const attendeesData = await attendeesResponse.json();
+        if (!attendeesResponse.ok)
+          throw new Error(attendeesData.error || "Failed to refresh attendees");
+        setAttendees(Array.isArray(attendeesData) ? attendeesData : []);
+        setAttendeesError("");
+      } catch (err: unknown) {
+        setAttendeesError(
+          err instanceof Error ? err.message : "Failed to refresh attendees",
+        );
+      }
     } catch (err: any) {
       setScanError(err.message || "Check-in failed");
     } finally {
@@ -323,13 +327,17 @@ export default function AdminAttendancePage() {
             </option>
             {events.map((event) => (
               <option key={event.id} value={event.id}>
-                {event.title} ({new Date(event.start_time).toLocaleDateString()})
+                {event.title} ({new Date(event.start_time).toLocaleDateString()}
+                )
               </option>
             ))}
           </select>
 
           <div className="flex gap-2">
-            <Button onClick={openScanner} className="bg-blue-600 hover:bg-blue-700">
+            <Button
+              onClick={openScanner}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
               Scan Code
             </Button>
             <Button
@@ -355,6 +363,44 @@ export default function AdminAttendancePage() {
 
           {error && <p className="text-red-500 mt-3 text-sm">{error}</p>}
         </div>
+
+        {checkinEventId && (
+          <div className="mt-8 border-t border-border pt-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold text-black dark:text-white">
+                Attending ({attendees.length})
+              </h2>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  setAttendeesRefreshVersion((version) => version + 1)
+                }
+                disabled={attendeesLoading}
+              >
+                {attendeesLoading ? "Refreshing..." : "Refresh attendees"}
+              </Button>
+            </div>
+            {attendeesError && (
+              <p className="mt-3 text-sm text-red-500">{attendeesError}</p>
+            )}
+            {!attendeesError && attendees.length === 0 && (
+              <p className="mt-3 text-sm text-foreground/60">
+                {attendeesLoading
+                  ? "Loading attendees..."
+                  : "No attendees yet."}
+              </p>
+            )}
+            {attendees.length > 0 && (
+              <ul className="mt-3 divide-y divide-border">
+                {attendees.map((attendee) => (
+                  <li key={attendee.id} className="py-2 text-sm">
+                    {attendee.name}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </SectionCard>
 
       {scannerOpen && (
@@ -375,10 +421,13 @@ export default function AdminAttendancePage() {
                   autoPlay
                 />
                 <p className="text-sm text-foreground/60 text-center">
-                  Point the rear camera at the QR code. Scanning submits automatically.
+                  Point the rear camera at the QR code. Scanning submits
+                  automatically.
                 </p>
                 {scanError && (
-                  <p className="text-red-500 text-sm text-center">{scanError}</p>
+                  <p className="text-red-500 text-sm text-center">
+                    {scanError}
+                  </p>
                 )}
               </>
             )}

@@ -11,20 +11,22 @@ import {
   adminInputClass,
 } from "@/components/admin/admin-field";
 import { useAdmin } from "@/components/admin/use-admin";
+import { normalizeRegistrationUrl } from "@/lib/events";
 
 const formatDateString = (value?: string | null) =>
   value ? new Date(value).toLocaleString() : "N/A";
 
 /**
- * Formats a stored timestamp for a `datetime-local` input.
- *
- * NOTE: this preserves the page's existing behaviour exactly, which converts
- * to UTC. `datetime-local` actually expects *local* time, so editing an event
- * currently shows its UTC time rather than NZ time. Left as-is here because
- * this change is structural; fixing it changes saved data.
+ * Formats a stored timestamp for a `datetime-local` input, which expects the
+ * browser's local time. Saving parses the input as local time too, so editing
+ * an event round-trips without shifting it by the UTC offset.
  */
-const toDateTimeInputValue = (value?: string | null) =>
-  value ? new Date(value).toISOString().slice(0, 16) : "";
+const toDateTimeInputValue = (value?: string | null) => {
+  if (!value) return "";
+  const date = new Date(value);
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
+};
 
 export default function AdminEventsPage() {
   const { events, loading, fetchData, adminFetch } = useAdmin();
@@ -32,11 +34,9 @@ export default function AdminEventsPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
-  const [capacity, setCapacity] = useState("");
+  const [registrationUrl, setRegistrationUrl] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
-  const [checkInOpen, setCheckInOpen] = useState("");
-  const [checkInClose, setCheckInClose] = useState("");
   const [assignedEmailsText, setAssignedEmailsText] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
@@ -51,11 +51,9 @@ export default function AdminEventsPage() {
     setTitle("");
     setDescription("");
     setLocation("");
-    setCapacity("");
+    setRegistrationUrl("");
     setStartTime("");
     setEndTime("");
-    setCheckInOpen("");
-    setCheckInClose("");
     setAssignedEmailsText("");
     setImageFile(null);
     setImagePreviewUrl(null);
@@ -97,6 +95,15 @@ export default function AdminEventsPage() {
 
   const createEvent = async () => {
     try {
+      if (!title.trim() || !startTime || !endTime) {
+        throw new Error("Title, start time and end time are required");
+      }
+      if (new Date(endTime) <= new Date(startTime)) {
+        throw new Error("End time must be after start time");
+      }
+      const normalizedRegistrationUrl =
+        normalizeRegistrationUrl(registrationUrl);
+
       let uploadedImage: { event_path: string; event_url: string } | null =
         null;
       if (imageFile) {
@@ -110,19 +117,14 @@ export default function AdminEventsPage() {
         title,
         description,
         location: location.trim() || null,
-        capacity: capacity.trim() ? Number(capacity) : null,
-        start_time: startTime ? new Date(startTime).toISOString() : null,
-        end_time: endTime ? new Date(endTime).toISOString() : null,
+        registration_url: normalizedRegistrationUrl,
+        start_time: new Date(startTime).toISOString(),
+        end_time: new Date(endTime).toISOString(),
         event_url: uploadedImage?.event_url ?? imageUrl,
         event_path: uploadedImage?.event_path ?? undefined,
       };
 
       if (editingId) payload.id = editingId;
-
-      if (checkInOpen)
-        payload.check_in_open_time = new Date(checkInOpen).toISOString();
-      if (checkInClose)
-        payload.check_in_close_time = new Date(checkInClose).toISOString();
 
       const assigned = assignedEmailsText
         .split(",")
@@ -203,14 +205,13 @@ export default function AdminEventsPage() {
             />
           </AdminField>
 
-          <AdminField label="Capacity">
+          <AdminField label="Luma Registration Link">
             <input
-              type="number"
-              min="1"
+              type="url"
               className={adminInputClass}
-              value={capacity}
-              onChange={(e) => setCapacity(e.target.value)}
-              placeholder="Leave blank for unlimited"
+              value={registrationUrl}
+              onChange={(e) => setRegistrationUrl(e.target.value)}
+              placeholder="https://lu.ma/..."
             />
           </AdminField>
 
@@ -241,24 +242,6 @@ export default function AdminEventsPage() {
               className={adminInputClass}
               value={endTime}
               onChange={(e) => setEndTime(e.target.value)}
-            />
-          </AdminField>
-
-          <AdminField label="Check-in Open">
-            <input
-              type="datetime-local"
-              className={adminInputClass}
-              value={checkInOpen}
-              onChange={(e) => setCheckInOpen(e.target.value)}
-            />
-          </AdminField>
-
-          <AdminField label="Check-in Close">
-            <input
-              type="datetime-local"
-              className={adminInputClass}
-              value={checkInClose}
-              onChange={(e) => setCheckInClose(e.target.value)}
             />
           </AdminField>
 
@@ -365,6 +348,20 @@ export default function AdminEventsPage() {
                       {ev.location}
                     </p>
                   )}
+                  {ev.registration_url ? (
+                    <a
+                      href={ev.registration_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-medium text-[#3F65E2] underline dark:text-[#D8B6F7]"
+                    >
+                      Luma link
+                    </a>
+                  ) : (
+                    <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                      No Luma link
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -377,13 +374,9 @@ export default function AdminEventsPage() {
                     setTitle(ev.title || "");
                     setDescription(ev.description || "");
                     setLocation(ev.location || "");
-                    setCapacity(ev.capacity != null ? String(ev.capacity) : "");
+                    setRegistrationUrl(ev.registration_url || "");
                     setStartTime(toDateTimeInputValue(ev.start_time));
                     setEndTime(toDateTimeInputValue(ev.end_time));
-                    setCheckInOpen(toDateTimeInputValue(ev.check_in_open_time));
-                    setCheckInClose(
-                      toDateTimeInputValue(ev.check_in_close_time),
-                    );
                     setImageUrl(ev.event_url || null);
                     setImagePreviewUrl(ev.event_url || null);
                     window.scrollTo({ top: 0, behavior: "smooth" });
