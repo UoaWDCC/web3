@@ -347,7 +347,7 @@ export default function ProfilePage() {
 
   if (!isConnected || !walletRegistered) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[linear-gradient(180deg,_#AFDCF1_0%,_#ADD8F2_27%,_#D3B7F3_100%)] text-foreground dark:bg-[linear-gradient(180deg,_#CAC1F7_0%,_#A8A1CA_21%,_#7B7890_59%,_#5C5A66_86%,_#6B6A7A_100%)] dark:text-white">
+      <div className="min-h-screen flex items-center justify-center bg-[linear-gradient(180deg,_#AFDCF1_0%,_#ADD8F2_27%,_#D3B7F3_100%)] text-foreground dark:bg-[linear-gradient(180deg,_#BDB5D1_0%,_#ABA2C2_21%,_#9287AF_59%,_#7F759C_86%,_#8E84AA_100%)] dark:text-white">
         <div className="text-center space-y-6 max-w-sm mx-auto px-4">
           <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto dark:border-white/20 dark:bg-white/10">
             <img
@@ -375,7 +375,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen w-screen flex flex-col gap-16 justify-center items-center bg-[linear-gradient(180deg,_#AFDCF1_0%,_#ADD8F2_27%,_#D3B7F3_100%)] px-4 md:px-0 pt-32 pb-24 text-foreground dark:bg-[linear-gradient(180deg,_#CAC1F7_0%,_#A8A1CA_21%,_#7B7890_59%,_#5C5A66_86%,_#6B6A7A_100%)] dark:text-white">
+    <div className="min-h-screen w-screen flex flex-col gap-16 justify-center items-center bg-[linear-gradient(180deg,_#AFDCF1_0%,_#ADD8F2_27%,_#D3B7F3_100%)] px-4 md:px-0 pt-32 pb-24 text-foreground dark:bg-[linear-gradient(180deg,_#BDB5D1_0%,_#ABA2C2_21%,_#9287AF_59%,_#7F759C_86%,_#8E84AA_100%)] dark:text-white">
       {/* Profile Card */}
       <div className="relative bg-white/80 w-full max-w-[90vw] lg:w-[80vw] lg:max-w-[90vw] p-8 lg:p-15 rounded-2xl overflow-visible shadow-lg dark:bg-[#404246]/85 dark:shadow-black/20">
         <div

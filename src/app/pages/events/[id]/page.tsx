@@ -24,8 +24,7 @@ export default async function EventDetailPage({
 
   return (
     <main className="min-h-screen pt-28">
-      {/* Width tracks the navbar (see navbar.tsx) so the two line up. */}
-      <div className="mx-auto mb-20 mt-20 w-[95%] rounded-[48px] bg-nav-bg p-8 shadow-xl sm:w-[90%] md:p-16 lg:w-[85%] xl:w-[80%]">
+      <div className="mx-auto mb-20 mt-20 w-[calc(100%-2rem)] rounded-[48px] bg-nav-bg p-8 shadow-xl sm:w-[90%] md:p-16 lg:w-[85%] xl:w-[80%]">
         <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
           {/* Poster sits in a neutral frame; object-contain because event
               posters are usually portrait and must not be cropped. */}

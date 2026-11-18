@@ -56,18 +56,18 @@ export default function AdminClaimsPage() {
 
   return (
     <SectionCard title="Claim ID">
-      <div className="grid gap-8 md:grid-cols-2">
+      <div className="grid gap-10 lg:grid-cols-2">
         {/* Pending Requests */}
         <div>
-          <h3 className="mb-4 border-b border-black/20 pb-3 text-lg font-bold text-black dark:border-white/30 dark:text-white">
+          <h3 className="mb-6 border-b border-black/20 pb-4 text-lg font-bold text-black dark:border-white/30 dark:text-white">
             Pending Requests
           </h3>
 
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-4">
             {pendingClaims.map((claim) => (
               <div
                 key={claim.id}
-                className="flex flex-col gap-3 rounded-xl bg-white/40 p-4 sm:flex-row sm:items-center sm:justify-between dark:bg-white/10"
+                className="flex flex-col gap-4 rounded-xl bg-white/40 p-5 sm:flex-row sm:items-center sm:justify-between dark:bg-white/10"
               >
                 <div className="min-w-0">
                   <p className="font-bold text-black dark:text-white">
@@ -77,7 +77,7 @@ export default function AdminClaimsPage() {
                     {claim.walletAddress}
                   </p>
                 </div>
-                <div className="flex shrink-0 gap-2">
+                <div className="flex shrink-0 gap-2 self-start sm:self-auto">
                   <Button
                     size="sm"
                     className="h-9 bg-green-600 px-4 text-sm hover:bg-green-700"
@@ -107,15 +107,15 @@ export default function AdminClaimsPage() {
 
         {/* Active Subnames */}
         <div>
-          <h3 className="mb-4 border-b border-black/20 pb-3 text-lg font-bold text-black dark:border-white/30 dark:text-white">
+          <h3 className="mb-6 border-b border-black/20 pb-4 text-lg font-bold text-black dark:border-white/30 dark:text-white">
             Active Subnames
           </h3>
 
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-4">
             {activeNames.map((ens) => (
               <div
                 key={ens.name}
-                className="flex flex-col gap-3 rounded-xl bg-white/40 p-4 sm:flex-row sm:items-center sm:justify-between dark:bg-white/10"
+                className="flex flex-col gap-4 rounded-xl bg-white/40 p-5 sm:flex-row sm:items-center sm:justify-between dark:bg-white/10"
               >
                 <div className="min-w-0">
                   <p className="font-bold text-black dark:text-white">
