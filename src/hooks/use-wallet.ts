@@ -11,11 +11,35 @@ export function useWallet() {
   const { mutate: disconnect } = useDisconnect();
   const { open } = useAppKit();
 
+  // Env allowlist resolves instantly; the admins table needs a round trip,
+  // so start from the env check and upgrade to true if the table says so.
+  const [isDbAdmin, setIsDbAdmin] = useState(false);
+
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const isAdmin = mounted && isAllowedAdminAddress(address);
+  useEffect(() => {
+    if (!address) {
+      setIsDbAdmin(false);
+      return;
+    }
+
+    let cancelled = false;
+    fetch(`/api/admin/is-admin?address=${encodeURIComponent(address)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled) setIsDbAdmin(!!data.isAdmin);
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [address]);
+
+  const isAdmin =
+    mounted && (isAllowedAdminAddress(address) || isDbAdmin);
 
   return {
     address,
