@@ -131,16 +131,6 @@ export default function AdminEventsPage() {
       const normalizedRegistrationUrl =
         normalizeRegistrationUrl(registrationUrl);
 
-      let uploadedImage: { event_path: string; event_url: string } | null =
-        null;
-      if (imageFile) {
-        uploadedImage = await uploadImage();
-        if (!uploadedImage) {
-          throw new Error("Unable to upload image before saving event");
-        }
-      }
-
-      const payload: Record<string, unknown> = {
       const event: Record<string, unknown> = {
         title,
         description,
@@ -154,11 +144,6 @@ export default function AdminEventsPage() {
       };
 
       if (editingId) event.id = editingId;
-
-      if (checkInOpen)
-        event.check_in_open_time = new Date(checkInOpen).toISOString();
-      if (checkInClose)
-        event.check_in_close_time = new Date(checkInClose).toISOString();
 
       const payload: Record<string, unknown> = { event };
 
