@@ -8,7 +8,10 @@ export type ClubEvent = {
   description: string | null;
   start_time: string | null;
   end_time: string | null;
+  check_in_open_time?: string | null;
+  check_in_close_time?: string | null;
   location: string | null;
+  capacity?: number | null;
   event_url: string | null;
   event_path: string | null;
   // Luma registration page the Register button opens.

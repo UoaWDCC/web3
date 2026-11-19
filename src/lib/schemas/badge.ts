@@ -1,0 +1,71 @@
+import { z } from "zod";
+
+/** Values of the `badge_enum` Postgres type. */
+export enum BadgeType {
+  Event = "EVENT",
+  Achievement = "ACHIEVEMENT",
+  Special = "SPECIAL",
+}
+
+// Field names match the Supabase column names exactly (`imageurl`, `eventid`,
+// `isactive`). PostgREST matches JSON keys to columns case-sensitively, so a
+// camelCase `imageUrl` is rejected as an unknown column.
+const badgeFieldsSchema = z.object({
+  name: z.string().trim().min(1, "Badge name is required"),
+  category: z.nativeEnum(BadgeType),
+  description: z.string().trim().nullable(),
+  imageurl: z.string().trim().nullable(),
+  criteria: z.string().trim().nullable(),
+  eventid: z.uuid().nullable(),
+  isactive: z.boolean(),
+});
+
+// Defaults are layered on here rather than declared on the shared field schema,
+// because `.partial()` makes a key optional but still applies its default — so
+// a default on `badgeFieldsSchema` would leak into `badgeUpdateSchema` and make
+// every patch silently overwrite the columns the caller never mentioned.
+//
+// The EVENT rule is checked at creation only; nothing in the database enforces
+// it. An event badge normally can't lose its event, since deleting the event
+// deletes the badge (ON DELETE CASCADE), but rows unlinked under the earlier
+// ON DELETE SET NULL rule may still exist, so badgeUpdateSchema doesn't apply
+// the rule either.
+const badgeInsertSchema = badgeFieldsSchema
+  .extend({
+    description: badgeFieldsSchema.shape.description.default(null),
+    imageurl: badgeFieldsSchema.shape.imageurl.default(null),
+    criteria: badgeFieldsSchema.shape.criteria.default(null),
+    eventid: badgeFieldsSchema.shape.eventid.default(null),
+    isactive: badgeFieldsSchema.shape.isactive.default(true),
+  })
+  .refine(
+    (badge) => badge.category !== BadgeType.Event || badge.eventid !== null,
+    { path: ["eventid"], message: "An EVENT badge must reference an event" },
+  );
+
+const badgeUpdateSchema = badgeFieldsSchema.partial();
+
+// The badge half of an event save (PUT /api/admin/events). category and eventid
+// are absent because save_event_with_badge sets them itself, and imageurl is
+// absent because it only ever comes from an image the route uploaded — so it is
+// always a URL that getBadgeImagePath can map back to a file for cleanup.
+// An omitted optional field keeps its current value when updating.
+const eventBadgeSchema = badgeFieldsSchema
+  .pick({ name: true, description: true, criteria: true, isactive: true })
+  .partial({ description: true, criteria: true, isactive: true });
+
+const badgeSchema = badgeFieldsSchema.extend({
+  id: z.uuid(),
+  created_at: z.string(),
+});
+
+/** A badge row as it comes back from the database. */
+export type Badge = z.infer<typeof badgeSchema>;
+/** The payload accepted by `createBadge` — defaulted fields may be omitted. */
+export type BadgeInsert = z.input<typeof badgeInsertSchema>;
+/** A partial patch accepted by `updateBadgeById`. */
+export type BadgeUpdate = z.input<typeof badgeUpdateSchema>;
+/** The badge fields an admin fills in alongside an event. */
+export type EventBadge = z.infer<typeof eventBadgeSchema>;
+
+export { badgeSchema, badgeInsertSchema, badgeUpdateSchema, eventBadgeSchema };
