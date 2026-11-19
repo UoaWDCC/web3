@@ -15,8 +15,8 @@ export function SectionCard({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-[28px] bg-[#A3DEF4] p-6 shadow-sm md:p-8 dark:bg-[#3F65E2]">
-      <h2 className="mb-6 text-2xl font-bold text-web3">{title}</h2>
+    <section className="rounded-2xl bg-[#A3DEF4] p-5 shadow-sm sm:rounded-[28px] sm:p-7 lg:p-9 dark:bg-[#3F65E2]">
+      <h2 className="mb-8 text-xl font-bold text-web3 sm:text-2xl">{title}</h2>
       {children}
     </section>
   );

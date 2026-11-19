@@ -25,9 +25,9 @@ const events = [
 export function About() {
   return (
 
-    <section id="about" className="min-h-screen bg-gradient-to-r pt-28 px-4">
+    <section id="about" className="min-h-screen bg-gradient-to-r pt-28">
       {/* MAIN CONTAINER */}
-      <div className="max-w-6xl mx-auto bg-nav-bg rounded-[48px] p-8 md:p-16 shadow-xl mt-20 mb-20">
+      <div className="mx-auto mb-20 mt-20 w-[calc(100%-2rem)] rounded-[48px] bg-nav-bg p-8 shadow-xl sm:w-[90%] md:p-16 lg:w-[85%] xl:w-[80%]">
 
         {/* Section header */}
         <div className="max-w-4xl mx-auto mb-14 text-center">

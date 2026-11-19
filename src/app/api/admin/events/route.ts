@@ -3,10 +3,11 @@ import { getSupabase } from "@/services/supabase";
 import { RegistrationService } from "@/services/registrations/registrations-service";
 import { verifyMessage } from "viem";
 import { z } from "zod";
-import { isAllowedAdminAddress } from "@/lib/admin-auth";
+import { isAdminAddress } from "@/lib/admin-auth-server";
 import type { ClubEvent } from "@/lib/events";
 import { eventBadgeSchema } from "@/lib/schemas/badge";
 import { EventService } from "@/services/event-service";
+import { normalizeRegistrationUrl } from "@/lib/events";
 import { getSupabaseAdmin } from "@/services/supabase-admin";
 
 async function verifyAdminAuth(req: NextRequest) {
@@ -15,12 +16,10 @@ async function verifyAdminAuth(req: NextRequest) {
   const timestamp = req.headers.get("x-admin-timestamp");
 
   if (!address || !signature || !timestamp) return false;
-  if (!isAllowedAdminAddress(address)) return false;
-  if (Date.now() - parseInt(timestamp) > 5 * 60 * 1000) return false;
+  if (!(await isAdminAddress(address))) return false;
 
   // Prevent replay attacks (valid for 5 mins)
-  const now = Date.now();
-  if (now - parseInt(timestamp) > 5 * 60 * 1000) return false;
+  if (Date.now() - parseInt(timestamp) > 5 * 60 * 1000) return false;
 
   try {
     const valid = await verifyMessage({
@@ -52,9 +51,9 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json(data || []);
-  } catch (err: any) {
+  } catch (err: unknown) {
     return NextResponse.json(
-      { error: err.message || "Failed" },
+      { error: err instanceof Error ? err.message : "Failed" },
       { status: 500 },
     );
   }
@@ -169,6 +168,7 @@ export async function PUT(req: NextRequest) {
       event_url,
       location,
       capacity,
+      registration_url,
     } = (request.event || {}) as Partial<ClubEvent>;
 
     if (!title || !start_time || !end_time) {
@@ -190,6 +190,17 @@ export async function PUT(req: NextRequest) {
       }
     }
 
+    let normalizedRegistrationUrl: string | null | undefined;
+    if (registration_url !== undefined) {
+      try {
+        normalizedRegistrationUrl = normalizeRegistrationUrl(registration_url);
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : "Invalid registration link";
+        return NextResponse.json({ error: message }, { status: 400 });
+      }
+    }
+
     // category, eventid and imageurl are stripped here: the database function
     // sets the first two, and imageurl only ever comes from badge_image.
     const badge =
@@ -206,8 +217,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const saved = await EventService.saveEventWithBadge(getSupabaseAdmin(), {
-      // An update leaves out the columns that are undefined here, so they keep
-      // their current values.
+      // Omitted fields on update are left unchanged by the database function.
       event: {
         id,
         title,
@@ -220,6 +230,7 @@ export async function PUT(req: NextRequest) {
         event_url,
         location,
         capacity,
+        registration_url: normalizedRegistrationUrl,
       },
       badge,
       removeBadge: request.removeBadge,

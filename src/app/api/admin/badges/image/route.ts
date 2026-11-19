@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { EventService } from "@/services/event-service";
+import { isAdminAddress } from "@/lib/admin-auth-server";
 import { verifyMessage } from "viem";
 import { isAllowedAdminAddress } from "@/lib/admin-auth";
 import BadgesService from "@/services/badges/badges-service";
@@ -9,7 +11,7 @@ async function verifyAdminAuth(req: NextRequest) {
   const signature = req.headers.get("x-admin-signature");
   const timestamp = req.headers.get("x-admin-timestamp");
 
-  if (!address || !signature || !timestamp || !isAllowedAdminAddress(address))
+  if (!address || !signature || !timestamp || !(await isAdminAddress(address)))
     return false;
 
   const now = Date.now();

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPrisma } from "@/lib/prisma";
 import { verifyMessage } from "viem";
-import { isAllowedAdminAddress } from "@/lib/admin-auth";
+import { isAdminAddress } from "@/lib/admin-auth-server";
 
 async function verifyAdminAuth(req: NextRequest) {
   const address = req.headers.get("x-admin-address")?.toLowerCase();
@@ -9,7 +9,7 @@ async function verifyAdminAuth(req: NextRequest) {
   const timestamp = req.headers.get("x-admin-timestamp");
 
   if (!address || !signature || !timestamp) return false;
-  if (!isAllowedAdminAddress(address)) return false;
+  if (!(await isAdminAddress(address))) return false;
 
   // Prevent replay attacks (valid for 5 mins)
   const now = Date.now();

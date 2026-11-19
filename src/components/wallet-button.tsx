@@ -58,7 +58,7 @@ export function WalletButton({ variant = "pill" }: { variant?: "pill" | "nav" })
 
   const buttonClass =
     variant === "nav"
-      ? "nav-bar-text text-base font-semibold tracking-wide transition-colors duration-100 hover:text-nav-text-hover hover:bg-transparent cursor-pointer inline-flex items-center whitespace-nowrap"
+      ? "nav-bar-text text-base font-semibold tracking-wide transition-colors duration-100 hover:text-nav-text-hover hover:bg-transparent dark:hover:text-nav-text-hover dark:hover:bg-transparent cursor-pointer inline-flex items-center whitespace-nowrap"
       : "text-base px-6 h-12 rounded-2xl inline-flex items-center justify-center";
 
 

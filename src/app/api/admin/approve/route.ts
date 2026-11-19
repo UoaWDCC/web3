@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPrisma } from "@/lib/prisma";
-import { setName } from "@/lib/namestone";
+import { setName } from "@/lib/namespace";
 import { verifyMessage } from "viem";
-import { isAllowedAdminAddress } from "@/lib/admin-auth";
+import { isAdminAddress } from "@/lib/admin-auth-server";
 
 async function verifyAdminAuth(req: NextRequest) {
   const address = req.headers.get("x-admin-address")?.toLowerCase();
   const signature = req.headers.get("x-admin-signature");
   const timestamp = req.headers.get("x-admin-timestamp");
 
-  if (!address || !signature || !timestamp || !isAllowedAdminAddress(address))
+  if (!address || !signature || !timestamp || !(await isAdminAddress(address)))
     return false;
   if (Date.now() - parseInt(timestamp) > 5 * 60 * 1000) return false;
 
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid claim" }, { status: 400 });
     }
 
-    // Call NameStone
+    // Call NameSpace
     await setName({
       domain: "web3uoa.eth",
       name: claim.requestedName,
